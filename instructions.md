@@ -35,8 +35,9 @@ be responsive for best view and edit ability on mobile web browser, e.g. Safari.
 2.  If the session is not loaded, session URL will redirect to the main screen: `<base-url>`.
 3.  The session screen will have the following components:
     1.  End Session Button: The user will be able to end the session by clicking the "End Session" button. Refer to the "Ending a session from the sessions screen" section for the details.
-    2.  The list of documents from that session. With pagination of 10 documents per page. Each list item will have a title, a creation date, and a last modified date. The list will be sorted by the last modified date. The item will be clickable to navigate to the document screen.
-    3.  Page buttons at the bottom of the screen.
+    2.  Add new document button: The user will be able to add a new document by clicking the "New" button. Refer to the "New Document" section for the details.
+    3.  The list of documents from that session. With pagination of 10 documents per page. Each list item will have a title, a creation date, and a last modified date. The list will be sorted by the last modified date. The item will be clickable to navigate to the document screen.
+    4.  Page buttons at the bottom of the screen.
 4.  New Session: When a new session is created, the key will be generated and stored in the browser's local storage. The key will be shown to be copied to the clipboard. The user will provide a passphrase to the key.
 5.  Load Session: The interface will have a field for the key, a field for the passphrase, and a submit button. Once the button is clicked, the key and the passphrase will be verified. If they are correct, the session will be loaded. If not, an error message will be shown as "Invalid key and/or passphrase".
 
@@ -76,7 +77,7 @@ be responsive for best view and edit ability on mobile web browser, e.g. Safari.
     1. The first line of the document will be used as the title of the document.
     2. There will be no other title entry area on the document screen.
 
-## 6. New Document: The user will be able to create a new document by clicking "New" button.
+## 6. New Document: The user will be able to create a new document by clicking "New" button
 
 1.  New document will generate a new URL.
 2.  New document will be encrypted with a random key.
@@ -85,6 +86,10 @@ be responsive for best view and edit ability on mobile web browser, e.g. Safari.
 5.  The user will be able to edit the document by clicking "Edit" button.
 
 ## 7. The backend API will save the document content in encrypted form. The key and the passphrase will never to be sent or stored in the backend API.
+
+## 8. Use the latest technologies for development as much as possible.
+
+## 9. Use icons from Lucid icon for the frontend. Use them especially for the buttons.
 
 # Development & Technologies
 
@@ -101,8 +106,13 @@ You will be using the following technologies:
    8. Pyenv: For Python version management.
    9. Pip: For Python package management.
    10. Pytest: For testing.
-2. Frontend: The latest versions of NextJS, shadcn, tailwind and lucid icon for frontend.
-3. Encryption: Web Crypto API (Native) for encryption on the frontend side.
+2. Frontend:
+   1. Typescript as the programming language.
+   2. NextJS as the framework.
+   3. Shadcn as the component library.
+   4. Tailwind as the CSS framework.
+   5. Lucid icon as the icon library.
+   6. Encryption: Web Crypto API (Native) for encryption on the frontend side.
 
 The development will be done in the local machine. The backend API will be hosted on http://localhost:5000. The frontend
 will be hosted on http://localhost:3000.
