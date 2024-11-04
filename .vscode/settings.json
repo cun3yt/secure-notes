@@ -1,0 +1,30 @@
+{
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "markup.heading",
+                "settings": {
+                    "foreground": "#569CD6"  // Blue color for headers
+                }
+            },
+            {
+                "scope": "markup.bold",
+                "settings": {
+                    "foreground": "#C586C0",  // Purple for bold text
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "scope": "markup.italic",
+                "settings": {
+                    "foreground": "#4EC9B0",  // Teal for italic text
+                    "fontStyle": "italic"
+                }
+            }
+        ]
+    },
+    "[markdown]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    }
+} 
