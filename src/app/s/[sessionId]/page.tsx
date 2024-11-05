@@ -48,7 +48,6 @@ export default function SessionPage({
   }
 
   const handleNewDocument = () => {
-    // We'll implement this next
     router.push(`/s/${params.sessionId}/d/new`)
   }
 
@@ -60,21 +59,23 @@ export default function SessionPage({
     <main className="container mx-auto p-4 max-w-4xl">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Secure Notes</h1>
-        <div className="flex gap-4">
+        <div className="flex gap-2 sm:gap-4">
           <Button
             onClick={handleNewDocument}
-            className="gap-2"
+            className="sm:gap-2"
+            title="New Document"
           >
             <FilePlus className="h-4 w-4" />
-            New Document
+            <span className="hidden sm:inline">New Document</span>
           </Button>
           <Button
             variant="outline"
             onClick={handleEndSession}
-            className="gap-2"
+            className="sm:gap-2"
+            title="End Session"
           >
             <LogOut className="h-4 w-4" />
-            End Session
+            <span className="hidden sm:inline">End Session</span>
           </Button>
         </div>
       </div>
