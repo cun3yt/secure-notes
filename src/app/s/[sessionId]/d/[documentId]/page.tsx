@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation'
 import { Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import DocumentEditor from '@/components/DocumentEditor'
+import { 
+  encryptDocument, 
+  decryptDocument, 
+  type EncryptedDocument,
+  loadSessionKey
+} from '@/lib/crypto'
 
 interface DocumentPageProps {
   params: {
@@ -17,27 +23,52 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   const router = useRouter()
   const [content, setContent] = useState('')
   const [hasChanges, setHasChanges] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const isNewDocument = params.documentId === 'new'
 
   useEffect(() => {
-    // Check if session exists
-    const sessionInfo = localStorage.getItem(`session_${params.sessionId}`)
-    if (!sessionInfo) {
-      router.replace('/')
-      return
-    }
+    async function loadDocument() {
+      try {
+        // Check if session exists
+        const sessionInfo = localStorage.getItem(`session_${params.sessionId}`)
+        if (!sessionInfo) {
+          router.replace('/')
+          return
+        }
 
-    // Load existing document if not new
-    if (!isNewDocument) {
-      // TODO: Load document content from API
-      // For now, we'll use localStorage for demo
-      const savedContent = localStorage.getItem(
-        `doc_${params.sessionId}_${params.documentId}`
-      )
-      if (savedContent) {
-        setContent(savedContent)
+        // Load existing document if not new
+        if (!isNewDocument) {
+          const encryptedDoc = localStorage.getItem(
+            `doc_${params.sessionId}_${params.documentId}`
+          )
+          
+          if (encryptedDoc) {
+            // TODO: In production, we'd get the passphrase from a secure session store
+            // For demo, we'll use a fixed passphrase
+            const demoPassphrase = "demo123" // This should come from secure session storage
+            const key = await loadSessionKey(params.sessionId, demoPassphrase)
+            
+            if (!key) {
+              throw new Error("Failed to load session key")
+            }
+
+            const decryptedContent = await decryptDocument(
+              JSON.parse(encryptedDoc),
+              key
+            )
+            setContent(decryptedContent)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load document:', err)
+        setError('Failed to load document')
+      } finally {
+        setIsLoading(false)
       }
     }
+
+    loadDocument()
   }, [params.sessionId, params.documentId, isNewDocument, router])
 
   const handleContentChange = (newContent: string) => {
@@ -47,15 +78,27 @@ export default function DocumentPage({ params }: DocumentPageProps) {
 
   const handleSave = async () => {
     try {
+      // TODO: In production, get passphrase from secure session storage
+      const demoPassphrase = "demo123"
+      const key = await loadSessionKey(params.sessionId, demoPassphrase)
+      
+      if (!key) {
+        throw new Error("Failed to load session key")
+      }
+
+      const encryptedDoc = await encryptDocument(content, key)
+      
       // TODO: Save to API
       // For now, save to localStorage
       localStorage.setItem(
         `doc_${params.sessionId}_${params.documentId}`,
-        content
+        JSON.stringify(encryptedDoc)
       )
+      
       setHasChanges(false)
     } catch (error) {
       console.error('Failed to save document:', error)
+      setError('Failed to save document')
     }
   }
 
@@ -71,6 +114,14 @@ export default function DocumentPage({ params }: DocumentPageProps) {
 
   // Extract title from first line of content
   const title = content.split('\n')[0] || 'Untitled'
+
+  if (isLoading) {
+    return <div>Loading...</div> // TODO: Add proper loading spinner
+  }
+
+  if (error) {
+    return <div>Error: {error}</div> // TODO: Add proper error component
+  }
 
   return (
     <main className="min-h-screen flex flex-col">

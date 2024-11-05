@@ -67,4 +67,82 @@ export async function generateSessionKey(passphrase: string): Promise<{
     salt: bytesToHex(salt),
     sessionId: bytesToHex(sessionIdBytes),
   };
+}
+
+// Interface for encrypted document data
+export interface EncryptedDocument {
+  iv: string;  // Initialization vector in hex
+  content: string;  // Encrypted content in hex
+}
+
+// Function to encrypt document content
+export async function encryptDocument(
+  content: string,
+  key: CryptoKey
+): Promise<EncryptedDocument> {
+  const encoder = new TextEncoder();
+  const contentBytes = encoder.encode(content);
+  
+  // Generate a random IV for each encryption
+  const iv = generateRandomBytes(12);
+  
+  // Encrypt the content
+  const encryptedContent = await crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv: iv
+    },
+    key,
+    contentBytes
+  );
+  
+  return {
+    iv: bytesToHex(iv),
+    content: bytesToHex(new Uint8Array(encryptedContent))
+  };
+}
+
+// Function to decrypt document content
+export async function decryptDocument(
+  encryptedDoc: EncryptedDocument,
+  key: CryptoKey
+): Promise<string> {
+  try {
+    const iv = hexToBytes(encryptedDoc.iv);
+    const encryptedContent = hexToBytes(encryptedDoc.content);
+    
+    const decryptedContent = await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      encryptedContent
+    );
+    
+    const decoder = new TextDecoder();
+    return decoder.decode(decryptedContent);
+  } catch (error) {
+    console.error('Decryption failed:', error);
+    throw new Error('Failed to decrypt document');
+  }
+}
+
+// Function to load session key from storage
+export async function loadSessionKey(
+  sessionId: string,
+  passphrase: string
+): Promise<CryptoKey | null> {
+  const sessionInfo = localStorage.getItem(`session_${sessionId}`);
+  if (!sessionInfo) return null;
+  
+  const { salt } = JSON.parse(sessionInfo);
+  const saltBytes = hexToBytes(salt);
+  
+  try {
+    return await deriveKeyFromPassphrase(passphrase, saltBytes);
+  } catch (error) {
+    console.error('Failed to load session key:', error);
+    return null;
+  }
 } 
