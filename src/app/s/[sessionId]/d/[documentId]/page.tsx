@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button'
 import DocumentEditor from '@/components/DocumentEditor'
 import { 
   encryptDocument, 
-  decryptDocument, 
-  type EncryptedDocument,
+  decryptDocument,
   loadSessionKey
 } from '@/lib/crypto'
+import { api } from '@/lib/api'
 
 interface DocumentPageProps {
   params: {
@@ -23,7 +23,7 @@ interface SessionInfo {
   id: string
   salt: string
   createdAt: string
-  passphrase: string // Add passphrase to session info
+  passphrase: string
 }
 
 export default function DocumentPage({ params }: DocumentPageProps) {
@@ -31,6 +31,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   const [content, setContent] = useState('')
   const [hasChanges, setHasChanges] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
   const isNewDocument = params.documentId === 'new'
@@ -50,23 +51,17 @@ export default function DocumentPage({ params }: DocumentPageProps) {
 
         // Load existing document if not new
         if (!isNewDocument) {
-          const encryptedDoc = localStorage.getItem(
-            `doc_${params.sessionId}_${params.documentId}`
-          )
-          
-          if (encryptedDoc) {
-            const key = await loadSessionKey(params.sessionId, session.passphrase)
-            
-            if (!key) {
-              throw new Error("Failed to load session key")
-            }
-
-            const decryptedContent = await decryptDocument(
-              JSON.parse(encryptedDoc),
-              key
-            )
-            setContent(decryptedContent)
+          const key = await loadSessionKey(params.sessionId, session.passphrase)
+          if (!key) {
+            throw new Error("Failed to load session key")
           }
+
+          const response = await api.getDocument(params.sessionId, params.documentId)
+          const decryptedContent = await decryptDocument(
+            response.data.encryptedContent,
+            key
+          )
+          setContent(decryptedContent)
         }
       } catch (err) {
         console.error('Failed to load document:', err)
@@ -85,28 +80,40 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   }
 
   const handleSave = async () => {
-    if (!sessionInfo) return
+    if (!sessionInfo || isSaving) return
 
     try {
+      setIsSaving(true)
+      setError(null)
+
       const key = await loadSessionKey(params.sessionId, sessionInfo.passphrase)
-      
       if (!key) {
         throw new Error("Failed to load session key")
       }
 
       const encryptedDoc = await encryptDocument(content, key)
       
-      // TODO: Save to API
-      // For now, save to localStorage
-      localStorage.setItem(
-        `doc_${params.sessionId}_${params.documentId}`,
-        JSON.stringify(encryptedDoc)
-      )
+      if (isNewDocument) {
+        const response = await api.createDocument(
+          params.sessionId,
+          encryptedDoc
+        )
+        // Redirect to the new document's permanent URL
+        router.replace(`/s/${params.sessionId}/d/${response.data.id}`)
+      } else {
+        await api.updateDocument(
+          params.sessionId,
+          params.documentId,
+          encryptedDoc
+        )
+      }
       
       setHasChanges(false)
     } catch (error) {
       console.error('Failed to save document:', error)
       setError('Failed to save document')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -124,11 +131,19 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   const title = content.split('\n')[0] || 'Untitled'
 
   if (isLoading) {
-    return <div>Loading...</div> // TODO: Add proper loading spinner
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Loading document...</p>
+      </div>
+    )
   }
 
   if (error) {
-    return <div>Error: {error}</div> // TODO: Add proper error component
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-red-500">{error}</p>
+      </div>
+    )
   }
 
   return (
@@ -139,16 +154,19 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           <div className="flex gap-2 sm:gap-4">
             <Button
               onClick={handleSave}
-              disabled={!hasChanges}
+              disabled={!hasChanges || isSaving}
               className="sm:gap-2"
               title="Save"
             >
               <Save className="h-4 w-4" />
-              <span className="hidden sm:inline">Save</span>
+              <span className="hidden sm:inline">
+                {isSaving ? "Saving..." : "Save"}
+              </span>
             </Button>
             <Button
               variant="outline"
               onClick={handleDiscard}
+              disabled={isSaving}
               className="sm:gap-2"
               title="Discard"
             >
