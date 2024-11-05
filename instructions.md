@@ -67,7 +67,7 @@ be responsive for best view and edit ability on mobile web browser, e.g. Safari.
 
 1.  Each session will have one or more documents.
 
-## 5. Document Relationship: Once a new session is created, the user will be able to create a new document by clicking "New" button.
+## 5. Document: Once a new session is created, the user will be able to create a new document by clicking "New" button.
 
 1.  Document URL: A new document or an existing document will have its own URL. Each url will be long enough not to be guess or brute-forced.
 2.  Document Screen: The document screen will have a save button, and discard button on the top.
@@ -76,11 +76,12 @@ be responsive for best view and edit ability on mobile web browser, e.g. Safari.
 3.  Document Title:
     1. The first line of the document will be used as the title of the document.
     2. There will be no other title entry area on the document screen.
+4.  Each document is a text file, which will be implemented with text area.
 
 ## 6. New Document: The user will be able to create a new document by clicking "New" button
 
 1.  New document will generate a new URL.
-2.  New document will be encrypted with a random key.
+2.  New document will be encrypted with the key of the session upon each save.
 3.  The key will be stored in the browser's local storage.
 4.  The user will be able to copy the URL and share it with others.
 5.  The user will be able to edit the document by clicking "Edit" button.
