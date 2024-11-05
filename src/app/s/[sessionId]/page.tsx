@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import { FilePlus, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import DocumentList from '@/components/DocumentList'
+import { api } from '@/lib/api'
 
 interface SessionInfo {
   id: string
   salt: string
   createdAt: string
+  passphrase: string
 }
 
 export default function SessionPage({
@@ -19,30 +21,53 @@ export default function SessionPage({
 }) {
   const router = useRouter()
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Check if session exists in localStorage
-    const storedSession = localStorage.getItem(`session_${params.sessionId}`)
-    if (!storedSession) {
-      router.replace('/')
-      return
+    async function validateAndLoadSession() {
+      console.log('Validating session:', params.sessionId)
+      try {
+        // Check if session exists in localStorage
+        const storedSession = localStorage.getItem(`session_${params.sessionId}`)
+        if (!storedSession) {
+          console.log('No session found in localStorage')
+          router.replace('/')
+          return
+        }
+
+        const session = JSON.parse(storedSession)
+        
+        // Validate session with backend
+        try {
+          await api.validateSession(params.sessionId)
+          console.log('Session validated with backend')
+        } catch (err) {
+          console.error('Session validation failed:', err)
+          localStorage.removeItem(`session_${params.sessionId}`)
+          router.replace('/')
+          return
+        }
+
+        setSessionInfo(session)
+      } catch (err) {
+        console.error('Error loading session:', err)
+        router.replace('/')
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    const session = JSON.parse(storedSession)
-    setSessionInfo(session)
-
-    // Check session age
-    const sessionAge = Date.now() - new Date(session.createdAt).getTime()
-    const maxAge = 12 * 60 * 60 * 1000 // 12 hours in milliseconds
-    
-    if (sessionAge > maxAge) {
-      handleEndSession()
-    }
+    validateAndLoadSession()
   }, [params.sessionId, router])
 
-  const handleEndSession = () => {
+  const handleEndSession = async () => {
     if (sessionInfo) {
-      localStorage.removeItem(`session_${sessionInfo.id}`)
+      try {
+        await api.endSession(params.sessionId)
+        localStorage.removeItem(`session_${sessionInfo.id}`)
+      } catch (err) {
+        console.error('Failed to end session:', err)
+      }
     }
     router.replace('/')
   }
@@ -51,8 +76,16 @@ export default function SessionPage({
     router.push(`/s/${params.sessionId}/d/new`)
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Loading session...</p>
+      </div>
+    )
+  }
+
   if (!sessionInfo) {
-    return null // or a loading spinner
+    return null
   }
 
   return (

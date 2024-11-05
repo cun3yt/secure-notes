@@ -11,7 +11,13 @@ import json
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "allow_headers": ["Content-Type"]
+    }
+})  # Enable CORS for all routes
 
 # Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://localhost/securenotes')
@@ -49,16 +55,19 @@ class Document(db.Model):
 # Routes
 @app.route('/api/sessions/<session_id>/documents', methods=['GET'])
 def get_documents(session_id):
+    print(f"Getting documents for session: {session_id}")  # Debug log
     page = request.args.get('page', 1, type=int)
     per_page = 10
     
     session = Session.query.filter_by(address=session_id).first()
     if not session:
+        print(f"Session not found: {session_id}")  # Debug log
         return jsonify({'error': 'Session not found'}), 404
     
     try:
         check_session_valid(session)
     except Exception as e:
+        print(f"Session validation failed: {str(e)}")  # Debug log
         return jsonify({'error': str(e)}), 401
     
     # Update last accessed time
@@ -72,11 +81,14 @@ def get_documents(session_id):
     
     documents = [{
         'id': doc.document_url,
-        'title': 'Untitled',  # Title will be extracted from decrypted content on frontend
+        'title': 'Untitled',
         'createdAt': doc.created_at.isoformat(),
         'lastModified': doc.last_modified.isoformat(),
         'sessionId': session_id
     } for doc in pagination.items]
+    
+    print(f"Found {len(documents)} documents")  # Debug log
+    print(f"Total documents: {pagination.total}")  # Debug log
     
     return jsonify({
         'data': {

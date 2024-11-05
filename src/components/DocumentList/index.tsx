@@ -24,27 +24,51 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
 
   useEffect(() => {
     async function fetchDocuments() {
+      console.log('API Base URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
+      console.log('Fetching documents for session:', sessionId)
       try {
         setIsLoading(true)
         setError(null)
         
         const response = await api.getDocuments(sessionId, currentPage)
-        setDocuments(response.data.documents)
-        setTotalDocuments(response.data.total)
+        console.log('Raw API Response:', response)
+        
+        if (response.data) {
+          console.log('Setting documents:', response.data.documents)
+          setDocuments(response.data.documents)
+          setTotalDocuments(response.data.total)
+          console.log('Documents loaded:', response.data.documents.length)
+        } else {
+          console.error('Invalid API response:', response)
+          setError('Invalid response format')
+        }
       } catch (err) {
-        console.error('Failed to fetch documents:', err)
-        setError('Failed to load documents')
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load documents'
+        console.error('Document fetch error:', err)
+        setError(errorMessage)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchDocuments()
+    if (sessionId) {
+      fetchDocuments()
+    } else {
+      console.warn('No sessionId provided')
+    }
   }, [sessionId, currentPage])
 
   const handleDocumentClick = (documentId: string) => {
     router.push(`/s/${sessionId}/d/${documentId}`)
   }
+
+  console.log('DocumentList render state:', {
+    isLoading,
+    error,
+    documentsCount: documents.length,
+    totalDocuments,
+    sessionId
+  })
 
   if (isLoading) {
     return (
@@ -57,7 +81,7 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
   if (error) {
     return (
       <div className="text-center py-8 text-red-500">
-        {error}
+        Error: {error}
       </div>
     )
   }
