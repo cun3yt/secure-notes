@@ -75,5 +75,35 @@ export const api = {
     return fetchApi(`/api/sessions/${sessionId}/documents/${documentId}`, {
       method: 'DELETE',
     })
-  }
+  },
+
+  // Create a new session
+  async createSession(sessionId: string): Promise<ApiResponse<{
+    id: string;
+    createdAt: string;
+    lastAccessed: string;
+  }>> {
+    return fetchApi('/api/sessions', {
+      method: 'POST',
+      body: JSON.stringify({ address: sessionId }),
+    })
+  },
+
+  // Validate a session
+  async validateSession(sessionId: string): Promise<ApiResponse<{
+    id: string;
+    createdAt: string;
+    lastAccessed: string;
+  }>> {
+    return fetchApi(`/api/sessions/${sessionId}`)
+  },
+
+  // End a session
+  async endSession(sessionId: string): Promise<ApiResponse<{
+    message: string;
+  }>> {
+    return fetchApi(`/api/sessions/${sessionId}`, {
+      method: 'DELETE',
+    })
+  },
 } 

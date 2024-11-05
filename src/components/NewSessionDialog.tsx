@@ -14,6 +14,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { generateSessionKey } from "@/lib/crypto"
 import { Copy } from "lucide-react"
+import { api } from "@/lib/api"
 
 interface NewSessionDialogProps {
   open: boolean
@@ -39,11 +40,14 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
       
       const { sessionId, salt, key } = await generateSessionKey(passphrase);
       
-      // Store the session info in localStorage with passphrase
+      // First create session in backend
+      await api.createSession(sessionId);
+      
+      // Then store session info in localStorage
       const sessionInfo = {
         id: sessionId,
         salt,
-        passphrase,
+        passphrase, // Store the passphrase with session info
         createdAt: new Date().toISOString()
       };
       
@@ -53,8 +57,8 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
       setGeneratedKey(sessionId);
       
     } catch (err) {
-      setError("Failed to generate session key");
-      console.error(err);
+      console.error('Failed to create session:', err);
+      setError("Failed to create session. Please try again.");
     } finally {
       setIsGenerating(false);
     }
