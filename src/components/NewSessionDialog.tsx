@@ -39,10 +39,11 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
       
       const { sessionId, salt, key } = await generateSessionKey(passphrase);
       
-      // Store the session info in localStorage
+      // Store the session info in localStorage with passphrase
       const sessionInfo = {
         id: sessionId,
         salt,
+        passphrase,
         createdAt: new Date().toISOString()
       };
       

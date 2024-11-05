@@ -19,23 +19,34 @@ interface DocumentPageProps {
   }
 }
 
+interface SessionInfo {
+  id: string
+  salt: string
+  createdAt: string
+  passphrase: string // Add passphrase to session info
+}
+
 export default function DocumentPage({ params }: DocumentPageProps) {
   const router = useRouter()
   const [content, setContent] = useState('')
   const [hasChanges, setHasChanges] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
   const isNewDocument = params.documentId === 'new'
 
   useEffect(() => {
     async function loadDocument() {
       try {
         // Check if session exists
-        const sessionInfo = localStorage.getItem(`session_${params.sessionId}`)
-        if (!sessionInfo) {
+        const storedSession = localStorage.getItem(`session_${params.sessionId}`)
+        if (!storedSession) {
           router.replace('/')
           return
         }
+
+        const session = JSON.parse(storedSession) as SessionInfo
+        setSessionInfo(session)
 
         // Load existing document if not new
         if (!isNewDocument) {
@@ -44,10 +55,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           )
           
           if (encryptedDoc) {
-            // TODO: In production, we'd get the passphrase from a secure session store
-            // For demo, we'll use a fixed passphrase
-            const demoPassphrase = "demo123" // This should come from secure session storage
-            const key = await loadSessionKey(params.sessionId, demoPassphrase)
+            const key = await loadSessionKey(params.sessionId, session.passphrase)
             
             if (!key) {
               throw new Error("Failed to load session key")
@@ -77,10 +85,10 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   }
 
   const handleSave = async () => {
+    if (!sessionInfo) return
+
     try {
-      // TODO: In production, get passphrase from secure session storage
-      const demoPassphrase = "demo123"
-      const key = await loadSessionKey(params.sessionId, demoPassphrase)
+      const key = await loadSessionKey(params.sessionId, sessionInfo.passphrase)
       
       if (!key) {
         throw new Error("Failed to load session key")
