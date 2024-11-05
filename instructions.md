@@ -98,7 +98,7 @@ You will be using the following technologies:
 1. Backend:
    1. Python 3: The latest version.
    2. Flask: API server.
-   3. SQLite: The database.
+   3. Posgres: The database. Use docker to run the database.
    4. Marshmallow: For object serialization and validation.
    5. SQLAlchemy: For database ORM.
    6. Flask-SQLAlchemy: For database integration with Flask.
