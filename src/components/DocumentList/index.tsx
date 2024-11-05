@@ -1,16 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-
-interface Document {
-  id: string
-  title: string
-  createdAt: string
-  lastModified: string
-}
+import { api } from '@/lib/api'
+import { DocumentMetadata } from '@/types/api'
 
 interface DocumentListProps {
   sessionId: string
@@ -19,27 +14,63 @@ interface DocumentListProps {
 export default function DocumentList({ sessionId }: DocumentListProps) {
   const router = useRouter()
   const [currentPage, setCurrentPage] = useState(1)
-  const [documents, setDocuments] = useState<Document[]>([]) // This will be populated from API
+  const [documents, setDocuments] = useState<DocumentMetadata[]>([])
+  const [totalDocuments, setTotalDocuments] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
   const documentsPerPage = 10
+  const totalPages = Math.ceil(totalDocuments / documentsPerPage)
 
-  const totalPages = Math.ceil(documents.length / documentsPerPage)
-  const startIndex = (currentPage - 1) * documentsPerPage
-  const endIndex = startIndex + documentsPerPage
-  const currentDocuments = documents.slice(startIndex, endIndex)
+  useEffect(() => {
+    async function fetchDocuments() {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        const response = await api.getDocuments(sessionId, currentPage)
+        setDocuments(response.data.documents)
+        setTotalDocuments(response.data.total)
+      } catch (err) {
+        console.error('Failed to fetch documents:', err)
+        setError('Failed to load documents')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchDocuments()
+  }, [sessionId, currentPage])
 
   const handleDocumentClick = (documentId: string) => {
     router.push(`/s/${sessionId}/d/${documentId}`)
   }
 
+  if (isLoading) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Loading documents...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-500">
+        {error}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      {currentDocuments.length === 0 ? (
+      {documents.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           No documents yet. Click "New Document" to create one.
         </div>
       ) : (
         <div className="divide-y">
-          {currentDocuments.map((doc) => (
+          {documents.map((doc) => (
             <div
               key={doc.id}
               onClick={() => handleDocumentClick(doc.id)}
