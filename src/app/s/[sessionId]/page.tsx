@@ -89,9 +89,16 @@ export default function SessionPage({
         return
       }
 
+      // Handle 'N' for new document
       if (event.key.toLowerCase() === 'n') {
         event.preventDefault()
         handleNewDocument()
+      }
+
+      // Handle 'E' for end session
+      if (event.key.toLowerCase() === 'e') {
+        event.preventDefault()
+        handleEndSession()
       }
     }
 
@@ -100,7 +107,7 @@ export default function SessionPage({
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [params.sessionId])
+  }, [params.sessionId, handleNewDocument, handleEndSession, sessionInfo])
 
   if (isLoading) {
     return (
@@ -131,7 +138,7 @@ export default function SessionPage({
             variant="outline"
             onClick={handleEndSession}
             className="sm:gap-2"
-            title="End Session"
+            title="End Session (E)"
           >
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">End Session</span>
