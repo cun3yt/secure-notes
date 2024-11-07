@@ -191,6 +191,10 @@ def update_document(session_id, document_id):
         return jsonify({'error': 'Missing encrypted content'}), 400
     
     document.set_encrypted_content(data['encryptedContent'])
+    
+    if 'encryptedTitle' in data:
+        document.set_encrypted_title(data['encryptedTitle'])
+    
     document.last_modified = datetime.utcnow()
     db.session.commit()
     
