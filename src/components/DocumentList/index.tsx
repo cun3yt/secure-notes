@@ -186,6 +186,12 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
     router.push(`/s/${sessionId}/d/${documentId}`)
   }
 
+  // Handle page change from buttons
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage)
+    setSelectedIndex(0)  // Reset selection to first item
+  }
+
   console.log('DocumentList render state:', {
     isLoading,
     error,
@@ -248,7 +254,7 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(p => p - 1)}
+            onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -259,7 +265,7 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(p => p + 1)}
+            onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
           >
             <ChevronRight className="h-4 w-4" />
