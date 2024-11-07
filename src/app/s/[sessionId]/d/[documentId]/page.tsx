@@ -136,6 +136,14 @@ export default function DocumentPage({ params }: DocumentPageProps) {
         event.preventDefault()
         handleDiscard()
       }
+
+      if ((event.key === 's' || event.key === 'S') && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault()
+        
+        if (hasChanges && !isSaving) {
+          handleSave()
+        }
+      }
     }
 
     document.addEventListener('keydown', handleKeyDown)
@@ -143,7 +151,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [handleDiscard])
+  }, [handleDiscard, handleSave, hasChanges, isSaving])
 
   // Extract title from first line of content
   const title = content.split('\n')[0] || 'Untitled'
