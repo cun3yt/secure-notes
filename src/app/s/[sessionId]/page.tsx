@@ -61,15 +61,19 @@ export default function SessionPage({
   }, [params.sessionId, router])
 
   const handleEndSession = async () => {
-    if (sessionInfo) {
-      try {
-        await api.endSession(params.sessionId)
-        localStorage.removeItem(`session_${sessionInfo.id}`)
-      } catch (err) {
-        console.error('Failed to end session:', err)
-      }
+    if (!sessionInfo) return
+
+    // Add confirmation dialog
+    const confirmed = window.confirm('Are you sure to end the current session?')
+    if (!confirmed) return
+
+    try {
+      await api.endSession(params.sessionId)
+      localStorage.removeItem(`session_${sessionInfo.id}`)
+      router.replace('/')
+    } catch (err) {
+      console.error('Failed to end session:', err)
     }
-    router.replace('/')
   }
 
   const handleNewDocument = () => {
