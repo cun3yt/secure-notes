@@ -102,4 +102,21 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2024 Cuneyt Mertayak
+
+This means you can:
+- ✅ Use this code commercially
+- ✅ Modify the code
+- ✅ Distribute the code
+- ✅ Use the code privately
+- ✅ Sublicense the code
+
+With the conditions that you:
+- ℹ️ Include the original license
+- ℹ️ Include the original copyright notice
+
+And understand that:
+- ❗ The software comes with no warranty
+- ❗ The author has no liability for damages 

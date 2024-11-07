@@ -115,18 +115,54 @@ We follow the Conventional Commits specification:
 
 ```
 secure-notes/
-├── src/                    # Frontend source code
-│   ├── app/               # Next.js pages and routes
-│   ├── components/        # React components
-│   ├── lib/               # Utility functions
+├── src/                      # Frontend source code
+│   ├── app/                  # Next.js pages and routes
+│   │   ├── page.tsx         # Main page
+│   │   ├── layout.tsx       # Root layout
+│   │   └── s/               # Session routes
+│   │       └── [sessionId]/ # Session pages
+│   │           ├── page.tsx # Session view
+│   │           └── d/       # Document routes
+│   │               └── [documentId]/ # Document pages
+│   ├── components/          # React components
+│   │   ├── ui/             # Reusable UI components
+│   │   ├── DocumentEditor/  # Document editing component
+│   │   ├── DocumentList/    # Document listing component
+│   │   ├── MainScreen.tsx  # Main screen component
+│   │   ├── NewSessionDialog.tsx
+│   │   └── LoadSessionDialog.tsx
+│   ├── lib/                # Utility functions
+│   │   ├── api.ts         # API client
+│   │   ├── crypto.ts      # Encryption utilities
+│   │   ├── session.ts     # Session management
+│   │   └── utils.ts       # General utilities
 │   └── types/             # TypeScript type definitions
+│       └── api.ts         # API types
 ├── backend/               # Flask backend
 │   ├── app.py            # Main application file
-│   └── requirements.txt   # Python dependencies
-└── sample/               # Sample implementation files
-    ├── crypto-javascript.md
-    └── database-model.md
+│   ├── requirements.txt  # Python dependencies
+│   └── .env             # Backend environment variables
+├── cursor-directions/    # Cursor IDE reference files
+│   ├── instructions.md   # Project instructions
+│   ├── sample-crypto-javascript.md
+│   └── sample-database-model.md
+├── .env.local           # Frontend environment variables
+├── package.json         # Node.js dependencies
+├── tsconfig.json        # TypeScript configuration
+├── tailwind.config.js   # Tailwind CSS configuration
+├── postcss.config.js    # PostCSS configuration
+├── LICENSE             # MIT license
+├── README.md           # Project documentation
+└── CONTRIBUTING.md     # Contribution guidelines
 ```
+
+This structure follows these principles:
+- Feature-first organization in components
+- Route-based organization in app directory
+- Clear separation of frontend and backend
+- Utility functions grouped by purpose
+- Configuration files at root level
+- Documentation and reference files clearly separated
 
 ## Questions?
 
