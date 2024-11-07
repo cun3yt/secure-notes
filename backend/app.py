@@ -2,6 +2,8 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from datetime import datetime
 import os
 from dotenv import load_dotenv
@@ -25,6 +27,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+# Initialize limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,  # Use IP address for rate limiting
+    default_limits=["200 per day"]  # Default limit
+)
 
 # Models
 class Session(db.Model):
@@ -62,6 +71,7 @@ class Document(db.Model):
 
 # Routes
 @app.route('/api/sessions/<session_id>/documents', methods=['GET'])
+@limiter.limit("60 per minute", key_func=lambda: request.view_args['session_id'])
 def get_documents(session_id):
     print(f"Getting documents for session: {session_id}")  # Debug log
     page = request.args.get('page', 1, type=int)
@@ -126,6 +136,7 @@ def get_document(session_id, document_id):
     })
 
 @app.route('/api/sessions/<session_id>/documents', methods=['POST'])
+@limiter.limit("60 per minute", key_func=lambda: request.view_args['session_id'])
 def create_document(session_id):
     session = Session.query.filter_by(address=session_id).first()
     if not session:
@@ -165,6 +176,7 @@ def create_document(session_id):
         return jsonify({'error': 'Failed to create document'}), 500
 
 @app.route('/api/sessions/<session_id>/documents/<document_id>', methods=['PUT'])
+@limiter.limit("60 per minute", key_func=lambda: request.view_args['session_id'])
 def update_document(session_id, document_id):
     session = Session.query.filter_by(address=session_id).first()
     if not session:
@@ -194,6 +206,7 @@ def update_document(session_id, document_id):
 
 # Session routes
 @app.route('/api/sessions', methods=['POST'])
+@limiter.limit("3 per minute")  # Session creation limit
 def create_session():
     data = request.get_json()
     if not data or 'address' not in data or 'salt' not in data:
@@ -222,6 +235,7 @@ def create_session():
         return jsonify({'error': 'Failed to create session'}), 500
 
 @app.route('/api/sessions/<session_id>', methods=['GET'])
+@limiter.limit("15 per minute", key_func=lambda: request.view_args['session_id'])  # Per-session limit
 def validate_session(session_id):
     session = Session.query.filter_by(address=session_id).first()
     
@@ -272,6 +286,14 @@ def check_session_valid(session):
     session_age = datetime.utcnow() - session.created_at
     if session_age.total_seconds() > 12 * 60 * 60:
         raise Exception('Session expired')
+
+# Add error handler for rate limit exceeded
+@app.errorhandler(429)  # Too Many Requests
+def ratelimit_handler(e):
+    return jsonify({
+        'error': 'Rate limit exceeded. Please try again later.',
+        'retry_after': e.description
+    }), 429
 
 if __name__ == '__main__':
     app.run(debug=True) 

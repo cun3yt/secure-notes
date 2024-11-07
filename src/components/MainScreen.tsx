@@ -46,7 +46,7 @@ export default function MainScreen() {
           {...{}}
         >
           <LockKeyhole className="h-4 w-4" />
-          Start New Session
+          New Session
         </Button>
         <Button
           variant="outline"
@@ -56,7 +56,7 @@ export default function MainScreen() {
           {...{}}
         >
           <Upload className="h-4 w-4" />
-          Load Previous Session
+          Load Session
         </Button>
       </div>
 
