@@ -133,13 +133,20 @@ export async function loadSessionKey(
   sessionId: string,
   passphrase: string
 ): Promise<CryptoKey | null> {
-  const sessionInfo = localStorage.getItem(`session_${sessionId}`);
-  if (!sessionInfo) return null;
-  
-  const { salt } = JSON.parse(sessionInfo);
-  const saltBytes = hexToBytes(salt);
-  
   try {
+    const sessionInfo = localStorage.getItem(`session_${sessionId}`);
+    if (!sessionInfo) {
+      console.warn('No session info found in localStorage');
+      return null;
+    }
+    
+    const parsed = JSON.parse(sessionInfo);
+    if (!parsed || !parsed.salt) {
+      console.warn('Invalid session info format:', parsed);
+      return null;
+    }
+    
+    const saltBytes = hexToBytes(parsed.salt);
     return await deriveKeyFromPassphrase(passphrase, saltBytes);
   } catch (error) {
     console.error('Failed to load session key:', error);

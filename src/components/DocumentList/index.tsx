@@ -6,15 +6,25 @@ import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { api } from '@/lib/api'
 import { DocumentMetadata } from '@/types/api'
+import { loadSessionKey, decryptDocument } from '@/lib/crypto'
 
 interface DocumentListProps {
   sessionId: string
 }
 
+interface DocumentListItem {
+  id: string;
+  encryptedTitle: { iv: string; content: string };
+  createdAt: string;
+  lastModified: string;
+  sessionId: string;
+}
+
 export default function DocumentList({ sessionId }: DocumentListProps) {
   const router = useRouter()
   const [currentPage, setCurrentPage] = useState(1)
-  const [documents, setDocuments] = useState<DocumentMetadata[]>([])
+  const [documents, setDocuments] = useState<DocumentListItem[]>([])
+  const [decryptedTitles, setDecryptedTitles] = useState<{ [key: string]: string }>({})
   const [totalDocuments, setTotalDocuments] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,6 +33,42 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
   const totalPages = Math.ceil(totalDocuments / documentsPerPage)
 
   useEffect(() => {
+    async function decryptTitles(docs: DocumentListItem[]) {
+      try {
+        const sessionInfo = localStorage.getItem(`session_${sessionId}`)
+        if (!sessionInfo) {
+          console.warn('No session info found');
+          return;
+        }
+
+        const parsed = JSON.parse(sessionInfo);
+        if (!parsed || !parsed.passphrase) {
+          console.warn('Invalid session info format');
+          return;
+        }
+
+        const key = await loadSessionKey(sessionId, parsed.passphrase)
+        if (!key) {
+          console.warn('Failed to load session key');
+          return;
+        }
+
+        const titles: { [key: string]: string } = {}
+        for (const doc of docs) {
+          try {
+            const decryptedTitle = await decryptDocument(doc.encryptedTitle, key)
+            titles[doc.id] = decryptedTitle.split('\n')[0] || 'Untitled'
+          } catch (err) {
+            console.error('Failed to decrypt title:', err)
+            titles[doc.id] = 'Untitled'
+          }
+        }
+        setDecryptedTitles(titles)
+      } catch (err) {
+        console.error('Failed to decrypt titles:', err);
+      }
+    }
+
     async function fetchDocuments() {
       console.log('API Base URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
       console.log('Fetching documents for session:', sessionId)
@@ -36,6 +82,7 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
         if (response.data) {
           console.log('Setting documents:', response.data.documents)
           setDocuments(response.data.documents)
+          await decryptTitles(response.data.documents)
           setTotalDocuments(response.data.total)
           console.log('Documents loaded:', response.data.documents.length)
         } else {
@@ -100,7 +147,9 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
               onClick={() => handleDocumentClick(doc.id)}
               className="py-4 cursor-pointer hover:bg-accent/50 px-4 -mx-4"
             >
-              <h3 className="font-medium mb-1">{doc.title}</h3>
+              <h3 className="font-medium mb-1">
+                {decryptedTitles[doc.id] || 'Untitled'}
+              </h3>
               <div className="text-sm text-muted-foreground flex gap-4">
                 <span>Created: {new Date(doc.createdAt).toLocaleDateString()}</span>
                 <span>Modified: {new Date(doc.lastModified).toLocaleDateString()}</span>

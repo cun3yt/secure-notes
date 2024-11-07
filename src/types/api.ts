@@ -1,6 +1,6 @@
 export interface DocumentMetadata {
   id: string
-  title: string
+  encryptedTitle: { iv: string; content: string }
   createdAt: string
   lastModified: string
   sessionId: string
@@ -12,9 +12,20 @@ export interface EncryptedDocumentData {
     iv: string
     content: string
   }
+  encryptedTitle: {
+    iv: string
+    content: string
+  }
   sessionId: string
   createdAt: string
   lastModified: string
+}
+
+export interface SessionResponse {
+  id: string
+  salt: string
+  createdAt: string
+  lastAccessed: string
 }
 
 export interface ApiResponse<T> {

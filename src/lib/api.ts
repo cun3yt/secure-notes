@@ -1,4 +1,4 @@
-import { ApiResponse, DocumentMetadata, EncryptedDocumentData } from "@/types/api"
+import { ApiResponse, DocumentMetadata, EncryptedDocumentData, SessionResponse } from "@/types/api"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
@@ -57,11 +57,12 @@ export const api = {
   // Create a new document
   async createDocument(
     sessionId: string,
-    encryptedContent: { iv: string; content: string }
+    encryptedContent: { iv: string; content: string },
+    encryptedTitle: { iv: string; content: string }
   ): Promise<ApiResponse<EncryptedDocumentData>> {
     return fetchApi(`/api/sessions/${sessionId}/documents`, {
       method: 'POST',
-      body: JSON.stringify({ encryptedContent }),
+      body: JSON.stringify({ encryptedContent, encryptedTitle }),
     })
   },
 
@@ -69,11 +70,12 @@ export const api = {
   async updateDocument(
     sessionId: string,
     documentId: string,
-    encryptedContent: { iv: string; content: string }
+    encryptedContent: { iv: string; content: string },
+    encryptedTitle: { iv: string; content: string }
   ): Promise<ApiResponse<EncryptedDocumentData>> {
     return fetchApi(`/api/sessions/${sessionId}/documents/${documentId}`, {
       method: 'PUT',
-      body: JSON.stringify({ encryptedContent }),
+      body: JSON.stringify({ encryptedContent, encryptedTitle }),
     })
   },
 
@@ -88,23 +90,15 @@ export const api = {
   },
 
   // Create a new session
-  async createSession(sessionId: string): Promise<ApiResponse<{
-    id: string;
-    createdAt: string;
-    lastAccessed: string;
-  }>> {
+  async createSession(sessionId: string, salt: string): Promise<ApiResponse<SessionResponse>> {
     return fetchApi('/api/sessions', {
       method: 'POST',
-      body: JSON.stringify({ address: sessionId }),
+      body: JSON.stringify({ address: sessionId, salt }),
     })
   },
 
   // Validate a session
-  async validateSession(sessionId: string): Promise<ApiResponse<{
-    id: string;
-    createdAt: string;
-    lastAccessed: string;
-  }>> {
+  async validateSession(sessionId: string): Promise<ApiResponse<SessionResponse>> {
     return fetchApi(`/api/sessions/${sessionId}`)
   },
 

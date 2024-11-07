@@ -1,8 +1,8 @@
-"""Initial migration
+"""Add encrypted_title column
 
-Revision ID: f1fa55da0ad7
+Revision ID: 458be9326612
 Revises: 
-Create Date: 2024-11-04 20:20:22.333628
+Create Date: 2024-11-04 22:00:39.927898
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'f1fa55da0ad7'
+revision = '458be9326612'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,6 +30,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('document_url', sa.String(length=256), nullable=False),
     sa.Column('encrypted_content', sa.Text(), nullable=False),
+    sa.Column('encrypted_title', sa.Text(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('last_modified', sa.DateTime(), nullable=True),
     sa.Column('session_id', sa.Integer(), nullable=False),

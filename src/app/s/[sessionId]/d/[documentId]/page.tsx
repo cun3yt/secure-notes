@@ -91,20 +91,23 @@ export default function DocumentPage({ params }: DocumentPageProps) {
         throw new Error("Failed to load session key")
       }
 
-      const encryptedDoc = await encryptDocument(content, key)
+      const title = content.split('\n')[0] || 'Untitled'
+      const encryptedContent = await encryptDocument(content, key)
+      const encryptedTitle = await encryptDocument(title, key)
       
       if (isNewDocument) {
         const response = await api.createDocument(
           params.sessionId,
-          encryptedDoc
+          encryptedContent,
+          encryptedTitle
         )
-        // Redirect to the new document's permanent URL
         router.replace(`/s/${params.sessionId}/d/${response.data.id}`)
       } else {
         await api.updateDocument(
           params.sessionId,
           params.documentId,
-          encryptedDoc
+          encryptedContent,
+          encryptedTitle
         )
       }
       

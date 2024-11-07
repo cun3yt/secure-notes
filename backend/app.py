@@ -32,6 +32,7 @@ class Session(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     address = db.Column(db.String(64), unique=True, nullable=False)
+    salt = db.Column(db.String(32), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_accessed = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     documents = db.relationship('Document', backref='session', lazy=True)
@@ -42,6 +43,7 @@ class Document(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     document_url = db.Column(db.String(256), unique=True, nullable=False)
     encrypted_content = db.Column(db.Text, nullable=False)
+    encrypted_title = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_modified = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'), nullable=False)
@@ -51,6 +53,12 @@ class Document(db.Model):
 
     def get_encrypted_content(self):
         return json.loads(self.encrypted_content)
+
+    def set_encrypted_title(self, title_dict):
+        self.encrypted_title = json.dumps(title_dict)
+
+    def get_encrypted_title(self):
+        return json.loads(self.encrypted_title)
 
 # Routes
 @app.route('/api/sessions/<session_id>/documents', methods=['GET'])
@@ -81,7 +89,7 @@ def get_documents(session_id):
     
     documents = [{
         'id': doc.document_url,
-        'title': 'Untitled',
+        'encryptedTitle': doc.get_encrypted_title(),
         'createdAt': doc.created_at.isoformat(),
         'lastModified': doc.last_modified.isoformat(),
         'sessionId': session_id
@@ -124,22 +132,18 @@ def create_document(session_id):
         return jsonify({'error': 'Session not found'}), 404
     
     data = request.get_json()
-    if not data or 'encryptedContent' not in data:
-        return jsonify({'error': 'Missing encrypted content'}), 400
+    if not data or 'encryptedContent' not in data or 'encryptedTitle' not in data:
+        return jsonify({'error': 'Missing encrypted content or title'}), 400
     
     # Generate unique document URL
     document_url = os.urandom(32).hex()
-    
-    # Extract encrypted content
-    encrypted_content = data['encryptedContent']
-    if not isinstance(encrypted_content, dict) or 'iv' not in encrypted_content or 'content' not in encrypted_content:
-        return jsonify({'error': 'Invalid encrypted content format'}), 400
     
     document = Document(
         document_url=document_url,
         session_id=session.id
     )
-    document.set_encrypted_content(encrypted_content)
+    document.set_encrypted_content(data['encryptedContent'])
+    document.set_encrypted_title(data['encryptedTitle'])
     
     try:
         db.session.add(document)
@@ -149,6 +153,7 @@ def create_document(session_id):
             'data': {
                 'id': document.document_url,
                 'encryptedContent': document.get_encrypted_content(),
+                'encryptedTitle': document.get_encrypted_title(),
                 'sessionId': session_id,
                 'createdAt': document.created_at.isoformat(),
                 'lastModified': document.last_modified.isoformat()
@@ -191,12 +196,13 @@ def update_document(session_id, document_id):
 @app.route('/api/sessions', methods=['POST'])
 def create_session():
     data = request.get_json()
-    if not data or 'address' not in data:
-        return jsonify({'error': 'Missing session address'}), 400
+    if not data or 'address' not in data or 'salt' not in data:
+        return jsonify({'error': 'Missing session address or salt'}), 400
     
-    # Create new session
+    # Create new session with salt
     session = Session(
-        address=data['address']
+        address=data['address'],
+        salt=data['salt']
     )
     
     try:
@@ -206,6 +212,7 @@ def create_session():
         return jsonify({
             'data': {
                 'id': session.address,
+                'salt': session.salt,
                 'createdAt': session.created_at.isoformat(),
                 'lastAccessed': session.last_accessed.isoformat()
             }
@@ -233,6 +240,7 @@ def validate_session(session_id):
     return jsonify({
         'data': {
             'id': session.address,
+            'salt': session.salt,
             'createdAt': session.created_at.isoformat(),
             'lastAccessed': session.last_accessed.isoformat()
         }
@@ -246,10 +254,8 @@ def end_session(session_id):
         return jsonify({'error': 'Session not found'}), 404
     
     try:
-        # Delete all documents associated with the session
-        Document.query.filter_by(session_id=session.id).delete()
-        # Delete the session
-        db.session.delete(session)
+        # Just update last_accessed time instead of deleting
+        session.last_accessed = datetime.utcnow()
         db.session.commit()
         
         return jsonify({

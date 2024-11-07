@@ -40,20 +40,19 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
       
       const { sessionId, salt, key } = await generateSessionKey(passphrase);
       
-      // First create session in backend
-      await api.createSession(sessionId);
+      // Create session in backend with salt
+      await api.createSession(sessionId, salt);
       
-      // Then store session info in localStorage
+      // Store session info in localStorage
       const sessionInfo = {
         id: sessionId,
         salt,
-        passphrase, // Store the passphrase with session info
+        passphrase,
         createdAt: new Date().toISOString()
       };
       
       localStorage.setItem(`session_${sessionId}`, JSON.stringify(sessionInfo));
       
-      // Show the generated key to the user
       setGeneratedKey(sessionId);
       
     } catch (err) {
