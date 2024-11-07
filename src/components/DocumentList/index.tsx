@@ -28,6 +28,7 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
   const [totalDocuments, setTotalDocuments] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedIndex, setSelectedIndex] = useState(0)
   
   const documentsPerPage = 10
   const totalPages = Math.ceil(totalDocuments / documentsPerPage)
@@ -105,6 +106,82 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
     }
   }, [sessionId, currentPage])
 
+  const handleKeyNavigation = async (direction: 'up' | 'down') => {
+    if (direction === 'down') {
+      // If we're at the last item of the current page
+      if (selectedIndex === documents.length - 1) {
+        // Check if there's a next page
+        if (currentPage < totalPages) {
+          // Load next page and select first item
+          setCurrentPage(prev => prev + 1)
+          setSelectedIndex(0)
+        }
+        // If no next page, keep selection at last item
+      } else {
+        // Normal within-page navigation
+        setSelectedIndex(prev => Math.min(prev + 1, documents.length - 1))
+      }
+    } else { // direction === 'up'
+      // If we're at the first item of the current page
+      if (selectedIndex === 0) {
+        // Check if there's a previous page
+        if (currentPage > 1) {
+          // Load previous page and select last item
+          setCurrentPage(prev => prev - 1)
+          // We'll set selectedIndex to last item after the page loads
+          setSelectedIndex(documentsPerPage - 1)
+        }
+        // If no previous page, keep selection at first item
+      } else {
+        // Normal within-page navigation
+        setSelectedIndex(prev => Math.max(prev - 1, 0))
+      }
+    }
+  }
+
+  // Update keyboard event handler
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const activeElement = document.activeElement?.tagName.toLowerCase()
+      if (activeElement === 'input' || activeElement === 'textarea') {
+        return
+      }
+
+      switch (event.key.toLowerCase()) {
+        case 'j':
+        case 'arrowdown':
+          event.preventDefault()
+          handleKeyNavigation('down')
+          break
+        
+        case 'k':
+        case 'arrowup':
+          event.preventDefault()
+          handleKeyNavigation('up')
+          break
+        
+        case 'enter':
+          event.preventDefault()
+          if (documents[selectedIndex]) {
+            handleDocumentClick(documents[selectedIndex].id)
+          }
+          break
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [documents, selectedIndex, currentPage, totalPages])
+
+  // Reset selection when page changes, but preserve direction
+  useEffect(() => {
+    // If we came from previous page, select last item
+    if (selectedIndex === documentsPerPage - 1 && documents.length > 0) {
+      setSelectedIndex(documents.length - 1)
+    }
+    // If we came from next page, first item is already selected (0)
+  }, [currentPage, documents.length, selectedIndex])
+
   const handleDocumentClick = (documentId: string) => {
     router.push(`/s/${sessionId}/d/${documentId}`)
   }
@@ -141,11 +218,18 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
         </div>
       ) : (
         <div className="divide-y">
-          {documents.map((doc) => (
+          {documents.map((doc, index) => (
             <div
               key={doc.id}
               onClick={() => handleDocumentClick(doc.id)}
-              className="py-4 cursor-pointer hover:bg-accent/50 px-4 -mx-4"
+              className={`py-4 cursor-pointer px-4 -mx-4 ${
+                index === selectedIndex 
+                  ? 'bg-accent/100' 
+                  : 'hover:bg-accent/50'
+              }`}
+              tabIndex={0}
+              role="button"
+              aria-selected={index === selectedIndex}
             >
               <h3 className="font-medium mb-1">
                 {decryptedTitles[doc.id] || 'Untitled'}
