@@ -235,7 +235,7 @@ def create_session():
         return jsonify({'error': 'Failed to create session'}), 500
 
 @app.route('/api/sessions/<session_id>', methods=['GET'])
-@limiter.limit("15 per minute", key_func=lambda: request.view_args['session_id'])  # Per-session limit
+@limiter.limit("40 per minute", key_func=lambda: request.view_args['session_id'])  # Per-session limit
 def validate_session(session_id):
     session = Session.query.filter_by(address=session_id).first()
     
