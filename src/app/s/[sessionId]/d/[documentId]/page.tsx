@@ -170,11 +170,12 @@ export default function DocumentPage({ params }: DocumentPageProps) {
               variant="outline"
               onClick={handleDiscard}
               disabled={isSaving}
-              className="sm:gap-2"
+              className={hasChanges ? "sm:gap-2" : ""}
+              size={hasChanges ? "default" : "icon"}
               title="Discard"
             >
               <X className="h-4 w-4" />
-              <span className="hidden sm:inline">Discard</span>
+              {hasChanges && <span className="hidden sm:inline">Discard</span>}
             </Button>
           </div>
         </div>
