@@ -95,8 +95,8 @@ export default function SessionPage({
         handleNewDocument()
       }
 
-      // Handle 'E' for end session
-      if (event.key.toLowerCase() === 'e') {
+      // Handle 'Escape' for end session
+      if (event.key === 'Escape') {
         event.preventDefault()
         handleEndSession()
       }
@@ -138,7 +138,7 @@ export default function SessionPage({
             variant="outline"
             onClick={handleEndSession}
             className="sm:gap-2"
-            title="End Session (E)"
+            title="End Session (Esc)"
           >
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">End Session</span>
