@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
-import { deriveKeyFromPassphrase, hexToBytes } from "@/lib/crypto"
+import { deriveKeyFromPassphrase, hexToBytes, decryptDocument } from "@/lib/crypto"
 import { clearExistingSession } from '@/lib/session'
 
 interface LoadSessionDialogProps {
@@ -51,8 +51,22 @@ export default function LoadSessionDialog({ open, onOpenChange }: LoadSessionDia
         throw new Error("Failed to derive key")
       }
 
+      // Get documents to verify passphrase by attempting decryption
+      const documentsResponse = await api.getDocuments(sessionId)
+      if (documentsResponse.data.documents.length > 0) {
+        const firstDoc = documentsResponse.data.documents[0]
+        try {
+          // Attempt to decrypt the first document's title
+          await decryptDocument(firstDoc.encryptedTitle, key)
+        } catch (err) {
+          console.error('Failed to decrypt document title:', err)
+          localStorage.removeItem(`session_${sessionId}`)
+          throw new Error("Invalid session key or passphrase")
+        }
+      }
+
       // Clear any existing session first
-      clearExistingSession();
+      clearExistingSession()
 
       // Store session info in localStorage with original salt
       const sessionInfo = {
@@ -67,6 +81,8 @@ export default function LoadSessionDialog({ open, onOpenChange }: LoadSessionDia
       router.push(`/s/${sessionId}`)
     } catch (err) {
       console.error('Failed to load session:', err)
+      // Make sure localStorage is cleared on any error
+      localStorage.removeItem(`session_${sessionId}`)
       setError("Invalid session key or passphrase")
     } finally {
       setIsLoading(false)
