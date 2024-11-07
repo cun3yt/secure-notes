@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -120,7 +120,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
     }
   }
 
-  const handleDiscard = () => {
+  const handleDiscard = useCallback(() => {
     if (hasChanges) {
       if (window.confirm('Are you sure you want to discard your changes?')) {
         router.back()
@@ -128,7 +128,22 @@ export default function DocumentPage({ params }: DocumentPageProps) {
     } else {
       router.back()
     }
-  }
+  }, [hasChanges, router])
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        handleDiscard()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [handleDiscard])
 
   // Extract title from first line of content
   const title = content.split('\n')[0] || 'Untitled'
