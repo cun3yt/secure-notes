@@ -182,7 +182,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
               onClick={handleSave}
               disabled={!hasChanges || isSaving}
               className="sm:gap-2"
-              title="Save"
+              title={`Save (${navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+S)`}
             >
               <Save className="h-4 w-4" />
               <span className="hidden sm:inline">
@@ -195,7 +195,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
               disabled={isSaving}
               className={hasChanges ? "sm:gap-2" : ""}
               size={hasChanges ? "default" : "icon"}
-              title="Discard"
+              title="Discard (Esc)"
             >
               <X className="h-4 w-4" />
               {hasChanges && <span className="hidden sm:inline">Discard</span>}
