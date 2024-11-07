@@ -128,8 +128,8 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
         if (currentPage > 1) {
           // Load previous page and select last item
           setCurrentPage(prev => prev - 1)
-          // We'll set selectedIndex to last item after the page loads
-          setSelectedIndex(documentsPerPage - 1)
+          // Set a flag to indicate we want to select the last item
+          setSelectedIndex(-1)  // Use -1 as a flag
         }
         // If no previous page, keep selection at first item
       } else {
@@ -138,6 +138,15 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
       }
     }
   }
+
+  // Update useEffect to handle page changes
+  useEffect(() => {
+    // If selectedIndex is -1, it means we came from next page
+    // and should select the last item
+    if (selectedIndex === -1 && documents.length > 0) {
+      setSelectedIndex(documentsPerPage - 1)
+    }
+  }, [documents, selectedIndex])
 
   // Update keyboard event handler
   useEffect(() => {
@@ -172,15 +181,6 @@ export default function DocumentList({ sessionId }: DocumentListProps) {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [documents, selectedIndex, currentPage, totalPages])
-
-  // Reset selection when page changes, but preserve direction
-  useEffect(() => {
-    // If we came from previous page, select last item
-    if (selectedIndex === documentsPerPage - 1 && documents.length > 0) {
-      setSelectedIndex(documents.length - 1)
-    }
-    // If we came from next page, first item is already selected (0)
-  }, [currentPage, documents.length, selectedIndex])
 
   const handleDocumentClick = (documentId: string) => {
     router.push(`/s/${sessionId}/d/${documentId}`)
