@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation"
 import { generateSessionKey } from "@/lib/crypto"
 import { Copy } from "lucide-react"
 import { api } from "@/lib/api"
+import { clearExistingSession } from '@/lib/session'
 
 interface NewSessionDialogProps {
   open: boolean
@@ -37,6 +38,9 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
     try {
       setIsGenerating(true);
       setError("");
+      
+      // Clear any existing session first
+      clearExistingSession();
       
       const { sessionId, salt, key } = await generateSessionKey(passphrase);
       

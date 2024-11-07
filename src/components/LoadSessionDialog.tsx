@@ -14,6 +14,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 import { deriveKeyFromPassphrase, hexToBytes } from "@/lib/crypto"
+import { clearExistingSession } from '@/lib/session'
 
 interface LoadSessionDialogProps {
   open: boolean
@@ -50,10 +51,13 @@ export default function LoadSessionDialog({ open, onOpenChange }: LoadSessionDia
         throw new Error("Failed to derive key")
       }
 
+      // Clear any existing session first
+      clearExistingSession();
+
       // Store session info in localStorage with original salt
       const sessionInfo = {
         id: sessionId,
-        salt,  // Use salt from backend
+        salt,
         passphrase,
         createdAt
       }
