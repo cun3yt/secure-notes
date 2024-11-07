@@ -32,6 +32,8 @@ next-env.d.ts
 
 # Python
 __pycache__/
+*/__pycache__/
+*/*/__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -56,8 +58,10 @@ MANIFEST
 venv/
 ENV/
 env/
+.venv/
 backend/venv/
 backend/env/
+backend/.venv/
 
 # Database
 *.sqlite3
