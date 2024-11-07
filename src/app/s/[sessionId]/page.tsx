@@ -76,6 +76,28 @@ export default function SessionPage({
     router.push(`/s/${params.sessionId}/d/new`)
   }
 
+  // Keyboard shortcut handler
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      // Only trigger if no input/textarea is focused
+      const activeElement = document.activeElement?.tagName.toLowerCase()
+      if (activeElement === 'input' || activeElement === 'textarea') {
+        return
+      }
+
+      if (event.key.toLowerCase() === 'n') {
+        event.preventDefault()
+        handleNewDocument()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [params.sessionId])
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -96,7 +118,7 @@ export default function SessionPage({
           <Button
             onClick={handleNewDocument}
             className="sm:gap-2"
-            title="New Document"
+            title="New Document (N)"
           >
             <FilePlus className="h-4 w-4" />
             <span className="hidden sm:inline">New Document</span>
