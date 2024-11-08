@@ -164,6 +164,10 @@ This structure follows these principles:
 - Configuration files at root level
 - Documentation and reference files clearly separated
 
+## Testing
+
+Please read [testing-instructions.md](testing-instructions.md) for details on how to write tests for the backend.
+
 ## Questions?
 
 Feel free to open an issue with your question or contact the maintainers directly.
