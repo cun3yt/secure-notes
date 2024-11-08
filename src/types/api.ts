@@ -3,7 +3,6 @@ export interface DocumentMetadata {
   encryptedTitle: { iv: string; content: string }
   createdAt: string
   lastModified: string
-  sessionId: string
 }
 
 export interface EncryptedDocumentData {

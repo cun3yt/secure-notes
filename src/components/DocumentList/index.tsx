@@ -17,7 +17,6 @@ interface DocumentListItem {
   encryptedTitle: { iv: string; content: string };
   createdAt: string;
   lastModified: string;
-  sessionId: string;
 }
 
 export default function DocumentList({ sessionId }: DocumentListProps) {

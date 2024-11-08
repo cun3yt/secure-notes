@@ -101,8 +101,7 @@ def get_documents(session_id):
         'id': doc.document_url,
         'encryptedTitle': doc.get_encrypted_title(),
         'createdAt': doc.created_at.isoformat(),
-        'lastModified': doc.last_modified.isoformat(),
-        'sessionId': session_id
+        'lastModified': doc.last_modified.isoformat()
     } for doc in pagination.items]
     
     print(f"Found {len(documents)} documents")  # Debug log
