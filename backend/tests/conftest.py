@@ -36,8 +36,8 @@ def test_client(test_app):
 def test_session(test_app):
     with test_app.app_context():
         session = Session(
-            address='test_address',
-            salt='test_salt'
+            address='test_session_address',
+            salt='test_session_salt'
         )
         db.session.add(session)
         db.session.commit()
