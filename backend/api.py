@@ -124,9 +124,18 @@ def get_document(session_id, document_id):
     if not session:
         return jsonify({'error': 'Session not found'}), 404
     
+    # try:
+    #     check_session_valid(session)
+    # except Exception as e:
+    #     return jsonify({'error': str(e)}), 401
+    
     document = Document.query.filter_by(session_id=session.id, document_url=document_id).first()
     if not document:
         return jsonify({'error': 'Document not found'}), 404
+    
+    # Update last accessed time
+    session.last_accessed = datetime.utcnow()
+    db.session.commit()
     
     return jsonify({
         'data': {

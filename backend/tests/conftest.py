@@ -45,3 +45,10 @@ def test_session(test_app):
         # Get a fresh copy of the session that's bound to the current db session
         session = db.session.get(Session, session.id)
         return session
+
+@pytest.fixture(autouse=True)
+def reset_rate_limits(test_app):
+    """Reset rate limits before each test"""
+    from api import limiter
+    with test_app.app_context():
+        limiter.reset()
