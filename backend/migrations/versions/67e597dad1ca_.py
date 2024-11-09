@@ -1,8 +1,8 @@
-"""Add encrypted_title column
+"""empty message
 
-Revision ID: 458be9326612
+Revision ID: 67e597dad1ca
 Revises: 
-Create Date: 2024-11-04 22:00:39.927898
+Create Date: 2024-11-08 13:44:37.379944
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '458be9326612'
+revision = '67e597dad1ca'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,6 +21,7 @@ def upgrade():
     op.create_table('sessions',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('address', sa.String(length=64), nullable=False),
+    sa.Column('salt', sa.String(length=32), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('last_accessed', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id'),

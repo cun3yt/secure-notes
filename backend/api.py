@@ -9,20 +9,23 @@ import os
 from dotenv import load_dotenv
 import json
 
+env = os.getenv('FLASK_ENV')
+
 # Load environment variables
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), f'.env.{env}.local'))
 
 app = Flask(__name__)
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:3000"],
+        "origins": [os.getenv('CORS_ORIGIN')],
         "methods": ["GET", "POST", "PUT", "DELETE"],
         "allow_headers": ["Content-Type"]
     }
 })  # Enable CORS for all routes
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://localhost/securenotes')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -31,8 +34,9 @@ migrate = Migrate(app, db)
 # Initialize limiter
 limiter = Limiter(
     app=app,
+    storage_uri = "memory://",
     key_func=get_remote_address,  # Use IP address for rate limiting
-    default_limits=["200 per day"]  # Default limit
+    default_limits=["200 per day"],  # Default limit
 )
 
 # Models
