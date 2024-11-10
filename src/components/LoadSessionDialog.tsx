@@ -8,12 +8,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { loadExistingSession } from "@/lib/crypto"
 import { api } from "@/lib/api"
-import { deriveKeyFromPassphrase, hexToBytes, decryptDocument } from "@/lib/crypto"
 import { clearExistingSession } from '@/lib/session'
 
 interface LoadSessionDialogProps {
@@ -22,16 +22,16 @@ interface LoadSessionDialogProps {
 }
 
 export default function LoadSessionDialog({ open, onOpenChange }: LoadSessionDialogProps) {
-  const [sessionId, setSessionId] = useState("")
-  const [passphrase, setPassphrase] = useState("")
+  const [key, setKey] = useState("")
+  const [address, setAddress] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!sessionId || !passphrase) {
-      setError("Please enter both session key and passphrase")
+    if (!address || !key) {
+      setError("Please enter both session address and key")
       return
     }
 
@@ -39,51 +39,24 @@ export default function LoadSessionDialog({ open, onOpenChange }: LoadSessionDia
       setIsLoading(true)
       setError("")
 
-      // Get session info including salt from backend
-      const sessionResponse = await api.validateSession(sessionId)
-      const { salt, createdAt } = sessionResponse.data
+      // Verify session exists in backend
+      await api.validateSession(address)
 
-      // Try to derive the key to verify passphrase
-      const saltBytes = hexToBytes(salt)
-      const key = await deriveKeyFromPassphrase(passphrase, saltBytes)
-      
-      if (!key) {
-        throw new Error("Failed to derive key")
-      }
-
-      // Get documents to verify passphrase by attempting decryption
-      const documentsResponse = await api.getDocuments(sessionId)
-      if (documentsResponse.data.documents.length > 0) {
-        const firstDoc = documentsResponse.data.documents[0]
-        try {
-          // Attempt to decrypt the first document's title
-          await decryptDocument(firstDoc.encryptedTitle, key)
-        } catch (err) {
-          console.error('Failed to decrypt document title:', err)
-          localStorage.removeItem(`session_${sessionId}`)
-          throw new Error("Invalid session key or passphrase")
-        }
+      // Verify key by attempting to load session
+      const isValid = loadExistingSession(address, key)
+      if (!isValid) {
+        throw new Error("Invalid key for this session")
       }
 
       // Clear any existing session first
       clearExistingSession()
 
-      // Store session info in localStorage with original salt
-      const sessionInfo = {
-        id: sessionId,
-        salt,
-        passphrase,
-        createdAt
-      }
-      localStorage.setItem(`session_${sessionId}`, JSON.stringify(sessionInfo))
-
       onOpenChange(false)
-      router.push(`/s/${sessionId}`)
+      router.push(`/s/${address}`)
     } catch (err) {
       console.error('Failed to load session:', err)
-      // Make sure localStorage is cleared on any error
-      localStorage.removeItem(`session_${sessionId}`)
-      setError("Invalid session key or passphrase")
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load session'
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -94,27 +67,26 @@ export default function LoadSessionDialog({ open, onOpenChange }: LoadSessionDia
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Load Previous Session</DialogTitle>
+            <DialogTitle>Load Session</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="sessionId">Session Key</Label>
+              <Label htmlFor="address">Session Address</Label>
               <Input
-                id="sessionId"
-                value={sessionId}
-                onChange={(e) => setSessionId(e.target.value)}
-                placeholder="Enter your session key"
-                autoFocus
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Enter your session address"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="passphrase">Passphrase</Label>
+              <Label htmlFor="key">Session Key</Label>
               <Input
-                id="passphrase"
+                id="key"
                 type="password"
-                value={passphrase}
-                onChange={(e) => setPassphrase(e.target.value)}
-                placeholder="Enter your passphrase"
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                placeholder="Enter your session key"
               />
             </div>
             {error && (
