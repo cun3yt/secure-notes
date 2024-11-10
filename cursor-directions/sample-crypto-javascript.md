@@ -84,7 +84,12 @@ async function decryptDocument(key, iv, ciphertext) {
   const key = await deriveKeyFromPassphrase(passphrase, salt);
 
   // Encrypt document
-  const { iv, ciphertext } = await encryptDocument(key, documentText);
+  const { iv, ciphertext } = await feat(document): improve document page layout
+
+- Add document title display
+- Keep save button visible when there are changes
+- Improve button layout and visibility
+- Update button labels based on document state(key, documentText);
   console.log("Encrypted:", { iv, ciphertext });
 
   // Decrypt document

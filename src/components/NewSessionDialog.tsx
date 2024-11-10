@@ -25,6 +25,7 @@ interface NewSessionDialogProps {
 export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialogProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedKey, setGeneratedKey] = useState("")
+  const [generatedAddress, setGeneratedAddress] = useState("")
   const [error, setError] = useState("")
   const router = useRouter()
 
@@ -49,6 +50,7 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
       })
       
       setGeneratedKey(key)
+      setGeneratedAddress(address)
       
     } catch (err) {
       console.error('Failed to create session:', err)
@@ -66,12 +68,18 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
     }
   }
 
+  const handleCopyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedAddress)
+    } catch (err) {
+      console.error("Failed to copy address", err)
+    }
+  }
+
   const handleContinue = () => {
     if (!generatedKey) return
-    
-    const address = generateAddress(generatedKey)
     onOpenChange(false)
-    router.push(`/s/${address}`)
+    router.push(`/s/${generatedAddress}`)
   }
 
   return (
@@ -103,13 +111,35 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
                     size="icon"
                     variant="outline"
                     onClick={handleCopyKey}
-                    title="Copy to clipboard"
+                    title="Copy key to clipboard"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Save this key securely. You'll need it to access your notes later.
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label>Session Address</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={generatedAddress}
+                    readOnly
+                    className="font-mono text-sm"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    onClick={handleCopyAddress}
+                    title="Copy address to clipboard"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  This is your session address. You'll need both the key and address to access your notes.
                 </p>
               </div>
             </div>
