@@ -107,7 +107,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
         return
       }
     }
-    setContent(originalContent)
+    router.push(`/s/${params.sessionId}`)
   }
 
   useEffect(() => {
