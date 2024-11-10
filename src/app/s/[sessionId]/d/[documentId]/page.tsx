@@ -6,11 +6,12 @@ import { Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import DocumentEditor from '@/components/DocumentEditor'
 import { 
-  encryptDocument, 
-  decryptDocument,
-  loadSessionKey
+  encrypt, 
+  decrypt,
+  getKey
 } from '@/lib/crypto'
 import { api } from '@/lib/api'
+import { getCurrentSession } from '@/lib/session'
 
 interface DocumentPageProps {
   params: {
@@ -19,198 +20,125 @@ interface DocumentPageProps {
   }
 }
 
-interface SessionInfo {
-  id: string
-  salt: string
-  createdAt: string
-  passphrase: string
-}
-
 export default function DocumentPage({ params }: DocumentPageProps) {
-  const router = useRouter()
-  const [content, setContent] = useState('')
-  const [hasChanges, setHasChanges] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [content, setContent] = useState("")
+  const [originalContent, setOriginalContent] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
-  const isNewDocument = params.documentId === 'new'
+  const router = useRouter()
+
+  const loadDocument = useCallback(async () => {
+    try {
+      const key = getKey(params.sessionId)
+      if (!key) {
+        router.push('/')
+        return
+      }
+
+      if (params.documentId === 'new') {
+        setContent("")
+        setOriginalContent("")
+        return
+      }
+
+      const response = await api.getDocument(params.sessionId, params.documentId)
+      const decryptedContent = decrypt(response.data.encryptedContent, key)
+      
+      setContent(decryptedContent)
+      setOriginalContent(decryptedContent)
+      setError(null)
+    } catch (err) {
+      console.error('Failed to load document:', err)
+      setError('Failed to load document')
+    }
+  }, [params.sessionId, params.documentId, router])
 
   useEffect(() => {
-    async function loadDocument() {
-      try {
-        // Check if session exists
-        const storedSession = localStorage.getItem(`session_${params.sessionId}`)
-        if (!storedSession) {
-          router.replace('/')
-          return
-        }
-
-        const session = JSON.parse(storedSession) as SessionInfo
-        setSessionInfo(session)
-
-        // Load existing document if not new
-        if (!isNewDocument) {
-          const key = await loadSessionKey(params.sessionId, session.passphrase)
-          if (!key) {
-            throw new Error("Failed to load session key")
-          }
-
-          const response = await api.getDocument(params.sessionId, params.documentId)
-          const decryptedContent = await decryptDocument(
-            response.data.encryptedContent,
-            key
-          )
-          setContent(decryptedContent)
-        }
-      } catch (err) {
-        console.error('Failed to load document:', err)
-        setError('Failed to load document')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     loadDocument()
-  }, [params.sessionId, params.documentId, isNewDocument, router])
-
-  const handleContentChange = (newContent: string) => {
-    setContent(newContent)
-    setHasChanges(true)
-  }
+  }, [loadDocument])
 
   const handleSave = async () => {
-    if (!sessionInfo || isSaving) return
-
     try {
       setIsSaving(true)
       setError(null)
 
-      const key = await loadSessionKey(params.sessionId, sessionInfo.passphrase)
+      const key = getKey(params.sessionId)
       if (!key) {
-        throw new Error("Failed to load session key")
+        router.push('/')
+        return
       }
 
       const title = content.split('\n')[0] || 'Untitled'
-      const encryptedContent = await encryptDocument(content, key)
-      const encryptedTitle = await encryptDocument(title, key)
       
-      if (isNewDocument) {
+      const encryptedContent = encrypt(content, key)
+      const encryptedTitle = encrypt(title, key)
+
+      if (params.documentId === 'new') {
         const response = await api.createDocument(
           params.sessionId,
-          encryptedContent,
-          encryptedTitle
+          encryptedTitle,
+          encryptedContent
         )
-        router.replace(`/s/${params.sessionId}/d/${response.data.id}`)
+        router.push(`/s/${params.sessionId}/d/${response.data.id}`)
       } else {
         await api.updateDocument(
           params.sessionId,
           params.documentId,
-          encryptedContent,
-          encryptedTitle
+          encryptedTitle,
+          encryptedContent
         )
       }
-      
-      setHasChanges(false)
-    } catch (error) {
-      console.error('Failed to save document:', error)
+
+      setOriginalContent(content)
+    } catch (err) {
+      console.error('Failed to save document:', err)
       setError('Failed to save document')
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleDiscard = useCallback(() => {
-    if (hasChanges) {
-      if (window.confirm('Are you sure you want to discard your changes?')) {
-        router.back()
-      }
-    } else {
-      router.back()
-    }
-  }, [hasChanges, router])
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        handleDiscard()
-      }
-
-      if ((event.key === 's' || event.key === 'S') && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault()
-        
-        if (hasChanges && !isSaving) {
-          handleSave()
-        }
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [handleDiscard, handleSave, hasChanges, isSaving])
-
-  // Extract title from first line of content
-  const title = content.split('\n')[0] || 'Untitled'
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Loading document...</p>
-      </div>
-    )
+  const handleDiscard = () => {
+    setContent(originalContent)
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-red-500">{error}</p>
-      </div>
-    )
-  }
+  const hasChanges = content !== originalContent
 
   return (
-    <main className="min-h-screen flex flex-col">
-      <header className="border-b">
-        <div className="container mx-auto max-w-4xl px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-medium truncate">{title}</h1>
-          <div className="flex gap-2 sm:gap-4">
-            <Button
-              onClick={handleSave}
-              disabled={!hasChanges || isSaving}
-              className="sm:gap-2"
-              title={`Save (${navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+S)`}
-            >
-              <Save className="h-4 w-4" />
-              <span className="hidden sm:inline">
-                {isSaving ? "Saving..." : "Save"}
-              </span>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleDiscard}
-              disabled={isSaving}
-              className={hasChanges ? "sm:gap-2" : ""}
-              size={hasChanges ? "default" : "icon"}
-              title="Discard (Esc)"
-            >
-              <X className="h-4 w-4" />
-              {hasChanges && <span className="hidden sm:inline">Discard</span>}
-            </Button>
-          </div>
+    <div className="container mx-auto p-4 max-w-4xl">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSave}
+            disabled={!hasChanges || isSaving}
+            className="gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleDiscard}
+            disabled={!hasChanges}
+            className="gap-2"
+          >
+            <X className="h-4 w-4" />
+            Discard
+          </Button>
         </div>
-      </header>
-
-      <div className="flex-1 container mx-auto max-w-4xl px-4 py-4">
-        <DocumentEditor
-          content={content}
-          onChange={handleContentChange}
-          placeholder="Start typing your note here..."
-        />
       </div>
-    </main>
+
+      {error && (
+        <div className="bg-red-50 text-red-500 p-2 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      <DocumentEditor
+        content={content}
+        onChange={setContent}
+        placeholder="Start typing..."
+      />
+    </div>
   )
 } 

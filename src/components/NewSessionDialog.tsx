@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation"
 import { createNewSession, generateAddress } from "@/lib/crypto"
 import { Copy } from "lucide-react"
 import { api } from "@/lib/api"
-import { clearExistingSession } from '@/lib/session'
+import { clearExistingSession, storeSessionInfo } from '@/lib/session'
 
 interface NewSessionDialogProps {
   open: boolean
@@ -39,8 +39,14 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
       // Generate new session
       const { address, key } = await createNewSession()
       
-      // Create session in backend (no salt needed anymore)
-      await api.createSession(address)
+      // Create session in backend
+      const response = await api.createSession(address)
+      
+      // Store session info
+      storeSessionInfo(address, {
+        id: address,
+        createdAt: new Date().toISOString()
+      })
       
       setGeneratedKey(key)
       
@@ -68,63 +74,55 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
     router.push(`/s/${address}`)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!generatedKey) {
-      handleCreateSession()
-    } else {
-      handleContinue()
-    }
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Create New Session</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {!generatedKey ? (
+        <DialogHeader>
+          <DialogTitle>Create New Session</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          {!generatedKey ? (
+            <div className="grid gap-2">
+              <p className="text-sm text-muted-foreground">
+                Click Generate Key to create a new secure session.
+              </p>
+              {error && <p className="text-sm text-red-500">{error}</p>}
+            </div>
+          ) : (
+            <div className="grid gap-4">
               <div className="grid gap-2">
-                <p className="text-sm text-muted-foreground">
-                  Click continue to generate a new secure key for your notes.
-                </p>
-                {error && <p className="text-sm text-red-500">{error}</p>}
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label>Your Secure Key</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={generatedKey}
-                      readOnly
-                      className="font-mono text-sm"
-                    />
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="outline"
-                      onClick={handleCopyKey}
-                      title="Copy to clipboard"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Save this key securely. You'll need it to access your notes later.
-                  </p>
+                <Label>Your Secure Key</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={generatedKey}
+                    readOnly
+                    className="font-mono text-sm"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    onClick={handleCopyKey}
+                    title="Copy to clipboard"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  Save this key securely. You'll need it to access your notes later.
+                </p>
               </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button type="submit" disabled={isGenerating}>
-              {isGenerating ? "Generating..." : !generatedKey ? "Generate Key" : "Continue"}
-            </Button>
-          </DialogFooter>
-        </form>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button 
+            onClick={!generatedKey ? handleCreateSession : handleContinue}
+            disabled={isGenerating}
+          >
+            {isGenerating ? "Generating..." : !generatedKey ? "Generate Key" : "Continue"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -1,14 +1,28 @@
 'use client'
 
-import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { LockKeyhole, Upload } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import NewSessionDialog from "./NewSessionDialog"
 import LoadSessionDialog from "./LoadSessionDialog"
+import { getCurrentSession, checkAndClearExpiredSession } from "@/lib/session"
 
 export default function MainScreen() {
   const [newSessionOpen, setNewSessionOpen] = useState(false)
   const [loadSessionOpen, setLoadSessionOpen] = useState(false)
+  const router = useRouter()
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const currentSession = getCurrentSession()
+    if (currentSession) {
+      checkAndClearExpiredSession()
+      if (getCurrentSession()) { // Check again after potential clear
+        router.push(`/s/${currentSession.id}`)
+      }
+    }
+  }, [router])
 
   // Add keyboard shortcut handler
   useEffect(() => {
@@ -43,7 +57,6 @@ export default function MainScreen() {
           onClick={() => setNewSessionOpen(true)}
           className="gap-2"
           title="Start New Session (N)"
-          {...{}}
         >
           <LockKeyhole className="h-4 w-4" />
           New Session
@@ -53,7 +66,6 @@ export default function MainScreen() {
           onClick={() => setLoadSessionOpen(true)}
           className="gap-2"
           title="Load Previous Session (L)"
-          {...{}}
         >
           <Upload className="h-4 w-4" />
           Load Session

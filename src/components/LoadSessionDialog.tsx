@@ -14,7 +14,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { loadExistingSession } from "@/lib/crypto"
 import { api } from "@/lib/api"
-import { clearExistingSession } from '@/lib/session'
+import { clearExistingSession, storeSessionInfo } from '@/lib/session'
 
 interface LoadSessionDialogProps {
   open: boolean
@@ -40,7 +40,7 @@ export default function LoadSessionDialog({ open, onOpenChange }: LoadSessionDia
       setError("")
 
       // Verify session exists in backend
-      await api.validateSession(address)
+      const response = await api.validateSession(address)
 
       // Verify key by attempting to load session
       const isValid = loadExistingSession(address, key)
@@ -50,6 +50,12 @@ export default function LoadSessionDialog({ open, onOpenChange }: LoadSessionDia
 
       // Clear any existing session first
       clearExistingSession()
+
+      // Store new session info
+      storeSessionInfo(address, {
+        id: address,
+        createdAt: response.data.createdAt
+      })
 
       onOpenChange(false)
       router.push(`/s/${address}`)

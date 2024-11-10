@@ -41,84 +41,69 @@ async function fetchApi<T>(
 }
 
 export const api = {
-  // Create a new session (no salt needed anymore)
+  // Session endpoints
   createSession: async (address: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/sessions`, {
+    return fetchApi<SessionResponse>('/api/sessions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ address }),
     })
-    if (!response.ok) throw new Error('Failed to create session')
-    return response.json()
   },
 
-  // Validate session exists
   validateSession: async (address: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/sessions/${address}`)
-    if (!response.ok) throw new Error('Session not found')
-    return response.json()
+    return fetchApi<SessionResponse>(`/api/sessions/${address}`)
   },
 
-  // Get documents for a session
+  // Document endpoints
   getDocuments: async (address: string, page = 1) => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/sessions/${address}/documents?page=${page}`
+    return fetchApi<{ documents: DocumentMetadata[], total: number, pages: number }>(
+      `/api/sessions/${address}/documents?page=${page}`
     )
-    if (!response.ok) throw new Error('Failed to fetch documents')
-    return response.json()
   },
 
-  // Create a new document
-  createDocument: async (address: string, encryptedTitle: string, encryptedContent: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/sessions/${address}/documents`, {
+  getDocument: async (address: string, documentId: string) => {
+    return fetchApi<EncryptedDocumentData>(
+      `/api/sessions/${address}/documents/${documentId}`
+    )
+  },
+
+  createDocument: async (
+    address: string,
+    encryptedTitle: string,
+    encryptedContent: string
+  ) => {
+    return fetchApi<EncryptedDocumentData>(`/api/sessions/${address}/documents`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         encryptedTitle,
         encryptedContent,
       }),
     })
-    if (!response.ok) throw new Error('Failed to create document')
-    return response.json()
   },
 
-  // Update a document
   updateDocument: async (
     address: string,
     documentId: string,
     encryptedTitle: string,
     encryptedContent: string
   ) => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/sessions/${address}/documents/${documentId}`,
+    return fetchApi<EncryptedDocumentData>(
+      `/api/sessions/${address}/documents/${documentId}`,
       {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           encryptedTitle,
           encryptedContent,
         }),
       }
     )
-    if (!response.ok) throw new Error('Failed to update document')
-    return response.json()
   },
 
-  // Delete a document
   deleteDocument: async (address: string, documentId: string) => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/sessions/${address}/documents/${documentId}`,
+    return fetchApi<{ message: string }>(
+      `/api/sessions/${address}/documents/${documentId}`,
       {
         method: 'DELETE',
       }
     )
-    if (!response.ok) throw new Error('Failed to delete document')
-    return response.json()
   },
 } 
