@@ -90,10 +90,10 @@ export const api = {
   },
 
   // Create a new session
-  async createSession(sessionId: string, salt: string): Promise<ApiResponse<SessionResponse>> {
+  async createSession(sessionId: string): Promise<ApiResponse<SessionResponse>> {
     return fetchApi('/api/sessions', {
       method: 'POST',
-      body: JSON.stringify({ address: sessionId, salt }),
+      body: JSON.stringify({ address: sessionId }),
     })
   },
 

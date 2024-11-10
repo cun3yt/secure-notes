@@ -28,7 +28,7 @@ The address will be done to be stored in the backend. It will be used to identif
 
 ## Backend
 
-Do not store the salt in the backend, as it will not be used again. Passphrase is not needed in the backend. The decryption will never use the passphrase. Passphrase is only used to generate the key.
+Do not store the salt in the backend, as it will not be used again. Passphrase is not needed in the backend. The decryption will never use the passphrase.
 
 ## Frontend
 

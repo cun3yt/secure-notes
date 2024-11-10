@@ -8,11 +8,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { generateSessionKey } from "@/lib/crypto"
+import { createNewSession, generateAddress } from "@/lib/crypto"
 import { Copy } from "lucide-react"
 import { api } from "@/lib/api"
 import { clearExistingSession } from '@/lib/session'
@@ -23,69 +23,57 @@ interface NewSessionDialogProps {
 }
 
 export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialogProps) {
-  const [passphrase, setPassphrase] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedKey, setGeneratedKey] = useState("")
   const [error, setError] = useState("")
   const router = useRouter()
 
   const handleCreateSession = async () => {
-    if (!passphrase) {
-      setError("Please enter a passphrase");
-      return;
-    }
-
     try {
-      setIsGenerating(true);
-      setError("");
+      setIsGenerating(true)
+      setError("")
       
       // Clear any existing session first
-      clearExistingSession();
+      clearExistingSession()
       
-      const { sessionId, salt, key } = await generateSessionKey(passphrase);
+      // Generate new session
+      const { address, key } = await createNewSession()
       
-      // Create session in backend with salt
-      await api.createSession(sessionId, salt);
+      // Create session in backend (no salt needed anymore)
+      await api.createSession(address)
       
-      // Store session info in localStorage
-      const sessionInfo = {
-        id: sessionId,
-        salt,
-        passphrase,
-        createdAt: new Date().toISOString()
-      };
-      
-      localStorage.setItem(`session_${sessionId}`, JSON.stringify(sessionInfo));
-      
-      setGeneratedKey(sessionId);
+      setGeneratedKey(key)
       
     } catch (err) {
-      console.error('Failed to create session:', err);
-      setError("Failed to create session. Please try again.");
+      console.error('Failed to create session:', err)
+      setError("Failed to create session. Please try again.")
     } finally {
-      setIsGenerating(false);
+      setIsGenerating(false)
     }
   }
 
   const handleCopyKey = async () => {
     try {
-      await navigator.clipboard.writeText(generatedKey);
+      await navigator.clipboard.writeText(generatedKey)
     } catch (err) {
-      console.error("Failed to copy key", err);
+      console.error("Failed to copy key", err)
     }
   }
 
   const handleContinue = () => {
-    onOpenChange(false);
-    router.push(`/s/${generatedKey}`);
+    if (!generatedKey) return
+    
+    const address = generateAddress(generatedKey)
+    onOpenChange(false)
+    router.push(`/s/${address}`)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!generatedKey) {
-      handleCreateSession();
+      handleCreateSession()
     } else {
-      handleContinue();
+      handleContinue()
     }
   }
 
@@ -99,21 +87,15 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
           <div className="grid gap-4 py-4">
             {!generatedKey ? (
               <div className="grid gap-2">
-                <Label htmlFor="passphrase">Enter Passphrase</Label>
-                <Input
-                  id="passphrase"
-                  type="password"
-                  value={passphrase}
-                  onChange={(e) => setPassphrase(e.target.value)}
-                  placeholder="Enter a secure passphrase"
-                  autoFocus
-                />
+                <p className="text-sm text-muted-foreground">
+                  Click continue to generate a new secure key for your notes.
+                </p>
                 {error && <p className="text-sm text-red-500">{error}</p>}
               </div>
             ) : (
               <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label>Your Session Key</Label>
+                  <Label>Your Secure Key</Label>
                   <div className="flex gap-2">
                     <Input
                       value={generatedKey}
@@ -138,18 +120,9 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
             )}
           </div>
           <DialogFooter>
-            {!generatedKey ? (
-              <Button 
-                type="submit"
-                disabled={isGenerating}
-              >
-                {isGenerating ? "Generating..." : "Create Session"}
-              </Button>
-            ) : (
-              <Button type="submit">
-                Continue to Session
-              </Button>
-            )}
+            <Button type="submit" disabled={isGenerating}>
+              {isGenerating ? "Generating..." : !generatedKey ? "Generate Key" : "Continue"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
