@@ -242,5 +242,28 @@ def delete_document(address, document_url):
         db.session.rollback()
         return jsonify({'error': 'Failed to delete document'}), 500
 
+@app.route('/api/sessions/<address>', methods=['DELETE'])
+@limiter.limit("60 per minute")
+def end_session(address):
+    session = Session.query.filter_by(address=address).first()
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+    
+    try:
+        # Delete all documents first due to foreign key constraint
+        Document.query.filter_by(session_id=session.id).delete()
+        # Then delete the session
+        db.session.delete(session)
+        db.session.commit()
+        
+        return jsonify({
+            'data': {
+                'message': 'Session ended successfully'
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to end session'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)

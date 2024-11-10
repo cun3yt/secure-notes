@@ -1,124 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FilePlus, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import DocumentList from '@/components/DocumentList'
-import { api } from '@/lib/api'
+import { clearExistingSession } from '@/lib/session'
 
-interface SessionInfo {
-  id: string
-  salt: string
-  createdAt: string
-  passphrase: string
+interface SessionPageProps {
+  params: {
+    sessionId: string
+  }
 }
 
-export default function SessionPage({
-  params
-}: {
-  params: { sessionId: string }
-}) {
+export default function SessionPage({ params }: SessionPageProps) {
   const router = useRouter()
-  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    async function validateAndLoadSession() {
-      console.log('Validating session:', params.sessionId)
-      try {
-        // Check if session exists in localStorage
-        const storedSession = localStorage.getItem(`session_${params.sessionId}`)
-        if (!storedSession) {
-          console.log('No session found in localStorage')
-          router.replace('/')
-          return
-        }
-
-        const session = JSON.parse(storedSession)
-        
-        // Validate session with backend
-        try {
-          await api.validateSession(params.sessionId)
-          console.log('Session validated with backend')
-        } catch (err) {
-          console.error('Session validation failed:', err)
-          localStorage.removeItem(`session_${params.sessionId}`)
-          router.replace('/')
-          return
-        }
-
-        setSessionInfo(session)
-      } catch (err) {
-        console.error('Error loading session:', err)
-        router.replace('/')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    validateAndLoadSession()
-  }, [params.sessionId, router])
-
-  const handleEndSession = async () => {
-    if (!sessionInfo) return
-
-    // Add confirmation dialog
-    const confirmed = window.confirm('Are you sure to end the current session?')
-    if (!confirmed) return
-
-    try {
-      await api.endSession(params.sessionId)
-      localStorage.removeItem(`session_${sessionInfo.id}`)
-      router.replace('/')
-    } catch (err) {
-      console.error('Failed to end session:', err)
-    }
-  }
 
   const handleNewDocument = () => {
     router.push(`/s/${params.sessionId}/d/new`)
   }
 
-  // Keyboard shortcut handler
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      // Only trigger if no input/textarea is focused
-      const activeElement = document.activeElement?.tagName.toLowerCase()
-      if (activeElement === 'input' || activeElement === 'textarea') {
-        return
-      }
-
-      // Handle 'N' for new document
-      if (event.key.toLowerCase() === 'n') {
-        event.preventDefault()
-        handleNewDocument()
-      }
-
-      // Handle 'Escape' for end session
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        handleEndSession()
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [params.sessionId, handleNewDocument, handleEndSession, sessionInfo])
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Loading session...</p>
-      </div>
-    )
-  }
-
-  if (!sessionInfo) {
-    return null
+  const handleEndSession = () => {
+    // Just clear local storage - don't delete from backend
+    clearExistingSession()
+    router.push('/')
   }
 
   return (
