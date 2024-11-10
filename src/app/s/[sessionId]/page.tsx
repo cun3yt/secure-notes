@@ -5,6 +5,7 @@ import { FilePlus, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import DocumentList from '@/components/DocumentList'
 import { clearExistingSession } from '@/lib/session'
+import { useEffect } from 'react'
 
 interface SessionPageProps {
   params: {
@@ -20,10 +21,32 @@ export default function SessionPage({ params }: SessionPageProps) {
   }
 
   const handleEndSession = () => {
-    // Just clear local storage - don't delete from backend
     clearExistingSession()
     router.push('/')
   }
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const activeElement = document.activeElement?.tagName.toLowerCase()
+      if (activeElement === 'input' || activeElement === 'textarea') {
+        return
+      }
+
+      switch (event.key.toLowerCase()) {
+        case 'n':
+          event.preventDefault()
+          handleNewDocument()
+          break
+        case 'escape':
+          event.preventDefault()
+          handleEndSession()
+          break
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [params.sessionId])
 
   return (
     <main className="container mx-auto p-4 max-w-4xl">
