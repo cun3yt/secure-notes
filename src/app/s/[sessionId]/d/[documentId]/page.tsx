@@ -132,27 +132,35 @@ export default function DocumentPage({ params }: DocumentPageProps) {
 
   const hasChanges = content !== originalContent
 
+  // Extract title from content
+  const title = content.split('\n')[0] || 'Untitled'
+
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-medium truncate">
+          {title}
+        </h1>
         <div className="flex gap-2">
-          <Button
-            onClick={handleSave}
-            disabled={!hasChanges || isSaving}
-            className="gap-2"
-            title="Save (⌘S or Ctrl+S)"
-          >
-            <Save className="h-4 w-4" />
-            {isSaving ? 'Saving...' : 'Save'}
-          </Button>
+          {hasChanges && (
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="gap-2"
+              title="Save (⌘S or Ctrl+S)"
+            >
+              <Save className="h-4 w-4" />
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={handleDiscard}
             className="gap-2"
-            title="Discard changes (Esc)"
+            title={hasChanges ? "Discard changes (Esc)" : "Close (Esc)"}
           >
             <X className="h-4 w-4" />
-            Discard
+            {hasChanges ? 'Discard' : 'Close'}
           </Button>
         </div>
       </div>
