@@ -99,8 +99,36 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   }
 
   const handleDiscard = () => {
+    if (hasChanges) {
+      const confirmed = window.confirm(
+        'You have unsaved changes. Are you sure you want to discard them?'
+      )
+      if (!confirmed) {
+        return
+      }
+    }
     setContent(originalContent)
   }
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const activeElement = document.activeElement?.tagName.toLowerCase()
+      if (activeElement === 'textarea') {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+          event.preventDefault()
+          if (hasChanges && !isSaving) {
+            handleSave()
+          }
+        } else if (event.key === 'Escape') {
+          event.preventDefault()
+          handleDiscard()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [content, originalContent, isSaving])
 
   const hasChanges = content !== originalContent
 
@@ -112,6 +140,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
             onClick={handleSave}
             disabled={!hasChanges || isSaving}
             className="gap-2"
+            title="Save (⌘S or Ctrl+S)"
           >
             <Save className="h-4 w-4" />
             {isSaving ? 'Saving...' : 'Save'}
@@ -119,8 +148,8 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           <Button
             variant="outline"
             onClick={handleDiscard}
-            disabled={!hasChanges}
             className="gap-2"
+            title="Discard changes (Esc)"
           >
             <X className="h-4 w-4" />
             Discard
