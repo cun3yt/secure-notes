@@ -41,73 +41,84 @@ async function fetchApi<T>(
 }
 
 export const api = {
-  // Get list of documents for a session
-  async getDocuments(sessionId: string, page: number = 1): Promise<ApiResponse<{
-    documents: DocumentMetadata[]
-    total: number
-  }>> {
-    return fetchApi(`/api/sessions/${sessionId}/documents?page=${page}`)
+  // Create a new session (no salt needed anymore)
+  createSession: async (address: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/sessions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ address }),
+    })
+    if (!response.ok) throw new Error('Failed to create session')
+    return response.json()
   },
 
-  // Get a single document
-  async getDocument(sessionId: string, documentId: string): Promise<ApiResponse<EncryptedDocumentData>> {
-    return fetchApi(`/api/sessions/${sessionId}/documents/${documentId}`)
+  // Validate session exists
+  validateSession: async (address: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/sessions/${address}`)
+    if (!response.ok) throw new Error('Session not found')
+    return response.json()
+  },
+
+  // Get documents for a session
+  getDocuments: async (address: string, page = 1) => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/sessions/${address}/documents?page=${page}`
+    )
+    if (!response.ok) throw new Error('Failed to fetch documents')
+    return response.json()
   },
 
   // Create a new document
-  async createDocument(
-    sessionId: string,
-    encryptedContent: { iv: string; content: string },
-    encryptedTitle: { iv: string; content: string }
-  ): Promise<ApiResponse<EncryptedDocumentData>> {
-    return fetchApi(`/api/sessions/${sessionId}/documents`, {
+  createDocument: async (address: string, encryptedTitle: string, encryptedContent: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/sessions/${address}/documents`, {
       method: 'POST',
-      body: JSON.stringify({ encryptedContent, encryptedTitle }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        encryptedTitle,
+        encryptedContent,
+      }),
     })
+    if (!response.ok) throw new Error('Failed to create document')
+    return response.json()
   },
 
   // Update a document
-  async updateDocument(
-    sessionId: string,
+  updateDocument: async (
+    address: string,
     documentId: string,
-    encryptedContent: { iv: string; content: string },
-    encryptedTitle: { iv: string; content: string }
-  ): Promise<ApiResponse<EncryptedDocumentData>> {
-    return fetchApi(`/api/sessions/${sessionId}/documents/${documentId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ encryptedContent, encryptedTitle }),
-    })
+    encryptedTitle: string,
+    encryptedContent: string
+  ) => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/sessions/${address}/documents/${documentId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          encryptedTitle,
+          encryptedContent,
+        }),
+      }
+    )
+    if (!response.ok) throw new Error('Failed to update document')
+    return response.json()
   },
 
   // Delete a document
-  async deleteDocument(
-    sessionId: string,
-    documentId: string
-  ): Promise<ApiResponse<void>> {
-    return fetchApi(`/api/sessions/${sessionId}/documents/${documentId}`, {
-      method: 'DELETE',
-    })
-  },
-
-  // Create a new session
-  async createSession(sessionId: string): Promise<ApiResponse<SessionResponse>> {
-    return fetchApi('/api/sessions', {
-      method: 'POST',
-      body: JSON.stringify({ address: sessionId }),
-    })
-  },
-
-  // Validate a session
-  async validateSession(sessionId: string): Promise<ApiResponse<SessionResponse>> {
-    return fetchApi(`/api/sessions/${sessionId}`)
-  },
-
-  // End a session
-  async endSession(sessionId: string): Promise<ApiResponse<{
-    message: string;
-  }>> {
-    return fetchApi(`/api/sessions/${sessionId}`, {
-      method: 'DELETE',
-    })
+  deleteDocument: async (address: string, documentId: string) => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/sessions/${address}/documents/${documentId}`,
+      {
+        method: 'DELETE',
+      }
+    )
+    if (!response.ok) throw new Error('Failed to delete document')
+    return response.json()
   },
 } 
