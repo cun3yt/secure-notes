@@ -6,6 +6,7 @@ from datetime import datetime
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import uuid
+from sqlalchemy import event
 
 app = Flask(__name__)
 CORS(app)
@@ -41,8 +42,13 @@ class Document(db.Model):
     encrypted_content = db.Column(db.Text, nullable=False)
     encrypted_title = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    last_modified = db.Column(db.DateTime, default=datetime.utcnow)
+    last_modified = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'), nullable=False)
+
+# Add SQLAlchemy event listener to update last_modified
+@event.listens_for(Document, 'before_update')
+def update_timestamp(mapper, connection, target):
+    target.last_modified = datetime.utcnow()
 
 # Session routes
 @app.route('/api/sessions', methods=['POST'])
