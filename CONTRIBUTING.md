@@ -2,33 +2,6 @@
 
 First off, thank you for considering contributing to Secure Notes! It's people like you that make Secure Notes such a great tool.
 
-## Development Environment
-
-### Recommended IDE
-
-We recommend using [Cursor](https://cursor.sh/) IDE for development. Cursor is an AI-powered code editor that:
-
-- Understands the codebase context
-- Provides intelligent code completion
-- Helps with code generation and refactoring
-- Has built-in pair programming features
-
-#### Setting up Cursor
-
-1. Download and install Cursor from https://cursor.sh/
-2. Open the project folder in Cursor
-3. Cursor will automatically recognize the project structure and provide relevant suggestions
-
-#### Cursor Directions
-
-We provide sample files to help it understand the implementation:
-
-- `cursor-directions/instructions.md`: Instructions on how to use Cursor to understand the codebase. It is used initially to understand the codebase. It is safe to ignore for future contributions.
-- `cursor-directions/sample-crypto-javascript.md`: Examples of encryption/decryption operations to direct Cursor to the relevant code. Again, safe to ignore for future contributions.
-- `cursor-directions/sample-database-model.md`: Database schema and model relationships to direct Cursor to the relevant code. Again, safe to ignore for future contributions.
-
-These files serve as reference implementations and should be consulted when making changes to related functionality.
-
 ## Code of Conduct
 
 This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code.
@@ -157,6 +130,7 @@ secure-notes/
 ```
 
 This structure follows these principles:
+
 - Feature-first organization in components
 - Route-based organization in app directory
 - Clear separation of frontend and backend

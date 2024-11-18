@@ -6,7 +6,7 @@ import pytest
 from api import app, db, Document, Session
 from dotenv import load_dotenv
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_app():
     # Configure app for testing
     flask_env = os.getenv('FLASK_ENV')
@@ -35,16 +35,18 @@ def test_client(test_app):
 @pytest.fixture
 def test_session(test_app):
     with test_app.app_context():
-        session = Session(
-            address='test_session_address',
-            salt='test_session_salt'
-        )
+        session = Session(address='test_session_address')
         db.session.add(session)
         db.session.commit()
         
         # Get a fresh copy of the session that's bound to the current db session
         session = db.session.get(Session, session.id)
-        return session
+        yield session
+        
+        # Cleanup - delete documents first, then session
+        db.session.query(Document).filter_by(session_id=session.id).delete()
+        db.session.query(Session).filter_by(id=session.id).delete()
+        db.session.commit()
 
 @pytest.fixture(autouse=True)
 def reset_rate_limits(test_app):
